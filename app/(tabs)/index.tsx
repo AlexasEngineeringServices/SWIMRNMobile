@@ -1,9 +1,7 @@
-import { useRouter } from "expo-router";
 import { StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 export default function HomeScreen() {
-  const router = useRouter();
   return (
     <SafeAreaView style={styles.container}>
       <Text>Home Screen</Text>
