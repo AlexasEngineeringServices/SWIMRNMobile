@@ -6,6 +6,7 @@ import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 import { swimTheme } from "../hooks/useCustomTheme";
 import { signInWithEmail, signUpWithEmail } from "../services/auth";
+import { sendVerificationEmail } from "../services/email";
 
 interface LoginData {
   email: string;
@@ -22,9 +23,9 @@ interface RegisterData {
 }
 
 const Auth = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleSignUp = async (data: RegisterData) => {
     setLoading(true);
@@ -50,8 +51,36 @@ const Auth = () => {
       return;
     }
 
-    if (!result?.session) {
-      Alert.alert("Check your email", "Please check your inbox for email verification!");
+    if (result?.user && result.user.email) {
+      try {
+        const { error: emailError } = await sendVerificationEmail({
+          user_id: result.user.id,
+          email: result.user.email,
+        });
+
+        if (emailError) {
+          throw new Error(emailError);
+        }
+
+        Alert.alert(
+          "Email Verification Required",
+          "We've sent a verification link to your email. Please check your inbox and verify your account before signing in.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setIsSignUp(false); // Switch back to login form
+              },
+            },
+          ]
+        );
+      } catch (emailError) {
+        console.error("Error sending verification email:", emailError);
+        Alert.alert(
+          "Error",
+          "Account created but failed to send verification email. Please contact support."
+        );
+      }
     }
 
     setLoading(false);
