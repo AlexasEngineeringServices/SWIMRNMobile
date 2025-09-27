@@ -12,9 +12,7 @@ const step1Schema = z
     firstName: z.string().min(1, { message: "First name is required" }),
     lastName: z.string().min(1, { message: "Last name is required" }),
     email: z.string().email({ message: "Invalid email address" }),
-    password: z
-      .string()
-      .min(6, { message: "Password must be at least 6 characters" }),
+    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -36,11 +34,7 @@ type RegisterFormProps = {
   loading?: boolean;
 };
 
-const RegisterForm: React.FC<RegisterFormProps> = ({
-  onSubmit,
-  error,
-  loading,
-}) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading }) => {
   const [step, setStep] = useState(1);
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -77,9 +71,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
     setStep(2);
   };
 
-  const handleStep2 = (data: Step2Data) => {
+  const handleStep2 = async (data: Step2Data) => {
     if (step1Data) {
-      onSubmit({ ...step1Data, ...data });
+      const combinedData = {
+        ...step1Data,
+        ...data,
+      };
+      onSubmit(combinedData);
     }
   };
 
@@ -88,15 +86,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       <Text style={styles.title}>Create Account</Text>
       <View style={styles.stepIndicatorContainer}>
         <View style={[styles.stepCircle, step === 1 && styles.stepActive]}>
-          <Text style={step === 1 ? styles.stepTextActive : styles.stepText}>
-            1
-          </Text>
+          <Text style={step === 1 ? styles.stepTextActive : styles.stepText}>1</Text>
         </View>
         <View style={styles.stepLine} />
         <View style={[styles.stepCircle, step === 2 && styles.stepActive]}>
-          <Text style={step === 2 ? styles.stepTextActive : styles.stepText}>
-            2
-          </Text>
+          <Text style={step === 2 ? styles.stepTextActive : styles.stepText}>2</Text>
         </View>
       </View>
       {step === 1 && (
@@ -120,9 +114,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             )}
           />
           {errors1.firstName && (
-            <Text style={styles.error}>
-              {errors1.firstName.message as string}
-            </Text>
+            <Text style={styles.error}>{errors1.firstName.message as string}</Text>
           )}
           <Controller
             control={control1}
@@ -143,9 +135,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             )}
           />
           {errors1.lastName && (
-            <Text style={styles.error}>
-              {errors1.lastName.message as string}
-            </Text>
+            <Text style={styles.error}>{errors1.lastName.message as string}</Text>
           )}
           <Controller
             control={control1}
@@ -167,9 +157,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               />
             )}
           />
-          {errors1.email && (
-            <Text style={styles.error}>{errors1.email.message as string}</Text>
-          )}
+          {errors1.email && <Text style={styles.error}>{errors1.email.message as string}</Text>}
           <Controller
             control={control1}
             name="password"
@@ -196,9 +184,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             )}
           />
           {errors1.password && (
-            <Text style={styles.error}>
-              {errors1.password.message as string}
-            </Text>
+            <Text style={styles.error}>{errors1.password.message as string}</Text>
           )}
           <Controller
             control={control1}
@@ -226,17 +212,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             )}
           />
           {errors1.confirmPassword && (
-            <Text style={styles.error}>
-              {errors1.confirmPassword.message as string}
-            </Text>
+            <Text style={styles.error}>{errors1.confirmPassword.message as string}</Text>
           )}
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.buttonRow}>
             <Button
               mode="contained"
-              style={
-                loading ? [styles.button, styles.buttonDisabled] : styles.button
-              }
+              style={loading ? [styles.button, styles.buttonDisabled] : styles.button}
               labelStyle={styles.buttonLabel}
               contentStyle={styles.buttonContent}
               onPress={handleSubmit1(handleStep1)}
@@ -251,8 +233,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       {step === 2 && (
         <View>
           <Text style={styles.note}>
-            Enter the required device number and device name from purchased
-            device
+            Enter the required device number and device name from purchased device
           </Text>
           <Controller
             control={control2}
@@ -273,9 +254,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             )}
           />
           {errors2.deviceNumber && (
-            <Text style={styles.error}>
-              {errors2.deviceNumber.message as string}
-            </Text>
+            <Text style={styles.error}>{errors2.deviceNumber.message as string}</Text>
           )}
           <Controller
             control={control2}
@@ -296,9 +275,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             )}
           />
           {errors2.deviceName && (
-            <Text style={styles.error}>
-              {errors2.deviceName.message as string}
-            </Text>
+            <Text style={styles.error}>{errors2.deviceName.message as string}</Text>
           )}
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.buttonRow}>
@@ -314,11 +291,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             </Button>
             <Button
               mode="contained"
-              style={[
-                styles.button,
-                styles.registerButton,
-                loading && styles.buttonDisabled,
-              ]}
+              style={[styles.button, styles.registerButton, loading && styles.buttonDisabled]}
               labelStyle={styles.buttonLabel}
               contentStyle={styles.buttonContent}
               onPress={handleSubmit2(handleStep2)}

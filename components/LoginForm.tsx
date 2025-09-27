@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import React from "react";
+import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { StyleSheet, View } from "react-native";
 import { Button, Text, TextInput } from "react-native-paper";
@@ -9,9 +9,7 @@ import { swimTheme } from "../hooks/useCustomTheme";
 
 const schema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
 });
 
 type LoginFormProps = {
@@ -21,7 +19,7 @@ type LoginFormProps = {
 };
 
 const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, error, loading }) => {
-  const [showPassword, setShowPassword] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     control,
     handleSubmit,
@@ -54,9 +52,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, error, loading }) => {
           />
         )}
       />
-      {errors.email && (
-        <Text style={styles.error}>{errors.email.message as string}</Text>
-      )}
+      {errors.email && <Text style={styles.error}>{errors.email.message as string}</Text>}
       <Controller
         control={control}
         name="password"
@@ -82,9 +78,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, error, loading }) => {
           />
         )}
       />
-      {errors.password && (
-        <Text style={styles.error}>{errors.password.message as string}</Text>
-      )}
+      {errors.password && <Text style={styles.error}>{errors.password.message as string}</Text>}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button
         mode="contained"
