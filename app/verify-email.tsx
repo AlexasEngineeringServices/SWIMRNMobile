@@ -34,6 +34,19 @@ export default function VerifyEmail() {
           return;
         }
 
+        // First check if the email is already verified
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("is_verified")
+          .eq("email", email)
+          .single();
+
+        if (existingProfile?.is_verified) {
+          setSuccess(true);
+          setVerifying(false);
+          return;
+        }
+
         const { data: tokenData, error: verifyError } = await supabase
           .from("email_verification_tokens")
           .select("user_id, expires_at")
@@ -105,7 +118,7 @@ export default function VerifyEmail() {
     }
 
     verifyEmail();
-  }, [token, router]);
+  }, [token, router, email]);
 
   const handleResendVerification = async () => {
     try {
