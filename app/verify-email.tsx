@@ -8,10 +8,15 @@ import { supabase } from "../lib/supabase";
 import { sendVerificationEmail } from "../services/email";
 
 export default function VerifyEmail() {
-  const { token } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  // Ensure token and email are always strings, even if param is an array
+  const token = Array.isArray(params.token) ? params.token[0] : params.token;
+  const email = Array.isArray(params.email) ? params.email[0] : params.email;
   const router = useRouter();
+
   const [verifying, setVerifying] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
   const [resending, setResending] = useState<boolean>(false);
   const [userData, setUserData] = useState<{
     user_id?: string;
@@ -22,7 +27,8 @@ export default function VerifyEmail() {
   useEffect(() => {
     async function verifyEmail() {
       try {
-        if (!token) {
+        if (!token || token === "undefined") {
+          console.error("Invalid token format:", token);
           setError("No verification token provided");
           setVerifying(false);
           return;
@@ -32,30 +38,43 @@ export default function VerifyEmail() {
           .from("email_verification_tokens")
           .select("user_id, expires_at")
           .eq("token", token)
+          .eq("email", email)
           .single();
 
         if (verifyError || !tokenData) {
+          console.error("Invalid or expired verification token");
           setError("Invalid or expired verification token");
           setVerifying(false);
           return;
         }
 
-        const { data: profileData } = await supabase
+        // Get user profile data first, before any other checks
+        const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("id, email, firstname")
           .eq("id", tokenData.user_id)
           .single();
 
-        if (profileData) {
-          setUserData({
-            user_id: profileData.id,
-            email: profileData.email,
-            firstname: profileData.firstname,
-          });
+        if (profileError || !profileData) {
+          console.error("Could not find user profile");
+          setError("Could not find user profile");
+          setVerifying(false);
+          return;
         }
 
+        // Set user data immediately after getting profile data
+        const userDataToSet = {
+          user_id: profileData.id,
+          email: profileData.email,
+          firstname: profileData.firstname,
+        };
+
+        setUserData(userDataToSet);
+
+        // Check expiration after setting user data
         const expiresAt = new Date(tokenData.expires_at);
         if (expiresAt < new Date()) {
+          console.error("Verification token has expired");
           setError("Verification token has expired");
           setVerifying(false);
           return;
@@ -63,18 +82,23 @@ export default function VerifyEmail() {
 
         const { error: updateError } = await supabase
           .from("profiles")
-          .update({ email_verified: true })
+          .update({ is_verified: true })
           .eq("id", tokenData.user_id);
 
         if (updateError) {
+          console.error("Error updating email verification status: ", updateError);
           setError("Failed to verify email");
           setVerifying(false);
           return;
         }
 
         await supabase.from("email_verification_tokens").delete().eq("token", token);
-        router.replace("/auth");
+        setSuccess(true);
+        setVerifying(false);
+        // Optionally, you can auto-redirect after a delay if you want
+        // setTimeout(() => router.replace("/auth"), 3000);
       } catch (err: any) {
+        console.error("Unexpected error during email verification:", err);
         setError(err.message || "An unexpected error occurred");
         setVerifying(false);
       }
@@ -86,8 +110,15 @@ export default function VerifyEmail() {
   const handleResendVerification = async () => {
     try {
       setResending(true);
-      if (!userData?.user_id || !userData.email) {
-        throw new Error("Missing user data for resend");
+
+      if (!userData) {
+        console.error("No user data available");
+        throw new Error("User data is not available for resend");
+      }
+
+      if (!userData.user_id || !userData.email) {
+        console.error("Incomplete user data:", userData);
+        throw new Error("Missing required user information for resend");
       }
 
       const { error: emailError } = await sendVerificationEmail({
@@ -120,6 +151,26 @@ export default function VerifyEmail() {
           <Text style={styles.subtitle}>
             Please wait while we confirm your email address. This will only take a moment.
           </Text>
+        </View>
+        <View style={styles.brandingContainer}>
+          <Text style={styles.brandingText}>Powered by</Text>
+          <Text style={styles.appName}>SWIM App</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (success) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.contentContainer}>
+          <Text style={styles.title}>Email Verified!</Text>
+          <Text style={styles.subtitle}>Your email has been successfully verified!</Text>
+          <View style={styles.buttonContainer}>
+            <Text style={styles.subtitle}>
+              You can now sign in to your account in the SWIM App. You may close this tab.
+            </Text>
+          </View>
         </View>
         <View style={styles.brandingContainer}>
           <Text style={styles.brandingText}>Powered by</Text>

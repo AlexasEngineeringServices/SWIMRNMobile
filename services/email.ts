@@ -10,8 +10,6 @@ interface SendVerificationEmailParams {
 
 export const sendVerificationEmail = async ({ user_id, email }: SendVerificationEmailParams) => {
   try {
-    console.log("Sending verification email to:", email);
-
     const response = await axios.post(
       `${SUPABASE_URL}/functions/v1/send-email-verification`,
       { user_id, email },

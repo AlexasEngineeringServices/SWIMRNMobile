@@ -17,8 +17,6 @@ interface SignUpData {
 
 export const signUpWithEmail = async (data: SignUpData) => {
   try {
-    console.log("Starting signup process...");
-
     // 1. Sign up with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
@@ -31,7 +29,6 @@ export const signUpWithEmail = async (data: SignUpData) => {
     }
 
     const user = authData.user;
-    console.log("User data in supabase.auth.signUp:", user);
 
     if (!user) {
       console.error("No user returned from auth signup");
@@ -49,13 +46,9 @@ export const signUpWithEmail = async (data: SignUpData) => {
       throw signInError;
     }
 
-    console.log("Auth successful, checking user ID...");
-
     if (!user.id) {
       throw new Error("User ID is not available");
     }
-
-    console.log("User ID verified, creating device...");
 
     let deviceData = null;
     let profileData = null;
@@ -80,7 +73,6 @@ export const signUpWithEmail = async (data: SignUpData) => {
       }
 
       deviceData = newDeviceData;
-      console.log("Device created successfully, creating profile...");
 
       // 3. Insert profile info linked to device
       const { data: newProfileData, error: profileError } = await supabase
@@ -103,7 +95,6 @@ export const signUpWithEmail = async (data: SignUpData) => {
       }
 
       profileData = newProfileData;
-      console.log("Profile created successfully");
     } catch (error) {
       if (deviceData?.id) {
         await supabase.from("devices").delete().eq("id", deviceData.id);

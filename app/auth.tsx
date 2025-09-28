@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
-import { Button } from "react-native-paper";
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { Button, Modal as PaperModal, Portal } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
@@ -26,6 +26,9 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [pendingUser, setPendingUser] = useState<{ user_id: string; email: string } | null>(null);
 
   const handleSignUp = async (data: RegisterData) => {
     setLoading(true);
@@ -39,8 +42,6 @@ const Auth = () => {
       device_number: data.deviceNumber,
       device_name: data.deviceName,
     };
-
-    console.log("Sign-up data:", signUpData);
 
     const { data: result, error } = await signUpWithEmail(signUpData);
 
@@ -89,12 +90,62 @@ const Auth = () => {
   const handleSignIn = async (data: LoginData) => {
     setLoading(true);
     setError("");
-    const { error } = await signInWithEmail(data);
+    const { data: loginResult, error } = await signInWithEmail(data);
     if (error) {
       setError(error.message || "Login failed");
       Alert.alert(error.message);
+      setLoading(false);
+      return;
+    }
+    // Check if user is_verified
+    if (loginResult && loginResult.user && loginResult.user.id) {
+      try {
+        const { data: profile, error: profileError } = await (
+          await import("../lib/supabase")
+        ).supabase
+          .from("profiles")
+          .select("id, email, is_verified")
+          .eq("id", loginResult.user.id)
+          .single();
+        if (profileError || !profile) {
+          setError("Could not fetch user profile");
+          setLoading(false);
+          return;
+        }
+        if (!profile.is_verified) {
+          setPendingUser({ user_id: profile.id, email: profile.email });
+          setShowVerifyModal(true);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        setError("Error checking verification status");
+        setLoading(false);
+        return;
+      }
     }
     setLoading(false);
+  };
+  const handleResendVerification = async () => {
+    if (!pendingUser) return;
+    setResending(true);
+    try {
+      const { error: emailError } = await sendVerificationEmail({
+        user_id: pendingUser.user_id,
+        email: pendingUser.email,
+      });
+      if (emailError) {
+        throw new Error(emailError);
+      }
+      Alert.alert(
+        "Verification Email Sent",
+        "Please check your email for the new verification link."
+      );
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to resend verification email. Please try again.");
+    } finally {
+      setResending(false);
+    }
   };
 
   const handleSwitchMode = () => {
@@ -123,6 +174,41 @@ const Auth = () => {
             {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
           </Button>
         </View>
+        {/* Email Verification Modal using react-native-paper */}
+        <Portal>
+          <PaperModal
+            visible={showVerifyModal}
+            onDismiss={() => setShowVerifyModal(false)}
+            contentContainerStyle={styles.paperModalContent}
+          >
+            <Text style={styles.modalTitle}>Email Verification Required</Text>
+            <Text style={styles.modalMessage}>
+              We&apos;ve sent a verification link to your email. Please check your inbox and verify
+              your account before signing in.
+            </Text>
+            <View style={styles.buttonContainer}>
+              <Button
+                mode="contained"
+                onPress={handleResendVerification}
+                disabled={resending}
+                loading={resending}
+                style={resending ? [styles.button, styles.buttonDisabled] : styles.button}
+                labelStyle={styles.buttonLabel}
+                contentStyle={styles.buttonContent}
+              >
+                {resending ? "Sending..." : "Resend Email Verification"}
+              </Button>
+              <Button
+                mode="text"
+                onPress={() => setShowVerifyModal(false)}
+                style={styles.closeButton}
+                labelStyle={styles.closeButtonLabel}
+              >
+                Close
+              </Button>
+            </View>
+          </PaperModal>
+        </Portal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -144,6 +230,74 @@ const styles = StyleSheet.create({
   },
   switchModeLabel: {
     color: swimTheme.colors.primary,
+  },
+  // Modal styles for react-native-paper
+  paperModalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 28,
+    width: "85%",
+    alignSelf: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: swimTheme.colors.primary,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  buttonContainer: {
+    gap: 16,
+    alignItems: "center",
+    width: "100%",
+    marginTop: 8,
+  },
+  button: {
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 0,
+    minWidth: 240, // Increased minWidth for longer text
+    alignSelf: "center",
+    backgroundColor: swimTheme.colors.primary,
+    borderRadius: 32,
+    height: 48, // Slightly increased height for better fit
+    justifyContent: "center", // Center text vertically
+  },
+  buttonDisabled: {
+    backgroundColor: "#cccccc",
+  },
+  buttonLabel: {
+    color: swimTheme.colors.card,
+    fontWeight: "700",
+    fontSize: 16,
+    letterSpacing: 0.5,
+    flexShrink: 1, // Allow text to shrink if needed
+    flexWrap: "wrap", // Allow text to wrap to next line if needed
+  },
+  buttonContent: {
+    height: 48, // Match button height
+    paddingHorizontal: 8, // Add horizontal padding for text
+  },
+  closeButton: {
+    marginTop: 0,
+    alignSelf: "center",
+  },
+  closeButtonLabel: {
+    color: swimTheme.colors.primary,
+    fontWeight: "600",
+    fontSize: 15,
   },
 });
 
