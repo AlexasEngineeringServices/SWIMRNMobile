@@ -4,12 +4,19 @@ import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import { Button } from "react-native-paper";
 import { FONT_SIZES } from "../constants/theme";
 import { swimTheme } from "../hooks/useCustomTheme";
-import { supabase } from "../lib/supabase";
-import { sendVerificationEmail } from "../services/email";
+import {
+  deleteEmailVerificationToken,
+  sendVerificationEmail,
+  validateEmailVerificationToken,
+} from "../services/email";
+import {
+  getProfileById,
+  getProfileVerificationStatus,
+  updateProfileVerificationStatus,
+} from "../services/profile";
 
 export default function VerifyEmail() {
   const params = useLocalSearchParams();
-  // Ensure token and email are always strings, even if param is an array
   const token = Array.isArray(params.token) ? params.token[0] : params.token;
   const email = Array.isArray(params.email) ? params.email[0] : params.email;
   const router = useRouter();
@@ -35,24 +42,24 @@ export default function VerifyEmail() {
         }
 
         // First check if the email is already verified
-        const { data: existingProfile } = await supabase
-          .from("profiles")
-          .select("is_verified")
-          .eq("email", email)
-          .single();
-
+        const { data: existingProfile, error: verificationError } =
+          await getProfileVerificationStatus(email);
+        if (verificationError) {
+          console.error("Error checking profile verification status", verificationError);
+          setError("Error checking profile verification status");
+          setVerifying(false);
+          return;
+        }
         if (existingProfile?.is_verified) {
           setSuccess(true);
           setVerifying(false);
           return;
         }
 
-        const { data: tokenData, error: verifyError } = await supabase
-          .from("email_verification_tokens")
-          .select("user_id, expires_at")
-          .eq("token", token)
-          .eq("email", email)
-          .single();
+        const { data: tokenData, error: verifyError } = await validateEmailVerificationToken(
+          token,
+          email
+        );
 
         if (verifyError || !tokenData) {
           console.error("Invalid or expired verification token");
@@ -62,26 +69,19 @@ export default function VerifyEmail() {
         }
 
         // Get user profile data first, before any other checks
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, email, firstname")
-          .eq("id", tokenData.user_id)
-          .single();
-
+        const { data: profileData, error: profileError } = await getProfileById(tokenData.user_id);
         if (profileError || !profileData) {
           console.error("Could not find user profile");
           setError("Could not find user profile");
           setVerifying(false);
           return;
         }
-
         // Set user data immediately after getting profile data
         const userDataToSet = {
           user_id: profileData.id,
           email: profileData.email,
           firstname: profileData.firstname,
         };
-
         setUserData(userDataToSet);
 
         // Check expiration after setting user data
@@ -93,11 +93,7 @@ export default function VerifyEmail() {
           return;
         }
 
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({ is_verified: true })
-          .eq("id", tokenData.user_id);
-
+        const { error: updateError } = await updateProfileVerificationStatus(tokenData.user_id);
         if (updateError) {
           console.error("Error updating email verification status: ", updateError);
           setError("Failed to verify email");
@@ -105,11 +101,15 @@ export default function VerifyEmail() {
           return;
         }
 
-        await supabase.from("email_verification_tokens").delete().eq("token", token);
+        const { error: deleteError } = await deleteEmailVerificationToken(token);
+        if (deleteError) {
+          console.error("Error deleting email verification token: ", deleteError);
+          setError("Failed to clean up verification token");
+          setVerifying(false);
+          return;
+        }
         setSuccess(true);
         setVerifying(false);
-        // Optionally, you can auto-redirect after a delay if you want
-        // setTimeout(() => router.replace("/auth"), 3000);
       } catch (err: any) {
         console.error("Unexpected error during email verification:", err);
         setError(err.message || "An unexpected error occurred");

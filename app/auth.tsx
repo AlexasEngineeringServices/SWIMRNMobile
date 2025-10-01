@@ -1,6 +1,8 @@
+import { sendPasswordResetEmail } from "@/services/passwordReset";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
-import { Button, Modal as PaperModal, Portal } from "react-native-paper";
+import { Button, Modal as PaperModal, Portal, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
@@ -29,6 +31,30 @@ const Auth = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [resending, setResending] = useState(false);
   const [pendingUser, setPendingUser] = useState<{ user_id: string; email: string } | null>(null);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) {
+      Alert.alert("Error", "Please enter your email address");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const { error } = await sendPasswordResetEmail(forgotEmail);
+      if (error) throw error;
+      Alert.alert(
+        "Password Reset Email Sent",
+        "Please check your email for instructions to reset your password.",
+        [{ text: "OK", onPress: () => setShowForgotModal(false) }]
+      );
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to send password reset email");
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const handleSignUp = async (data: RegisterData) => {
     setLoading(true);
@@ -97,7 +123,6 @@ const Auth = () => {
       setLoading(false);
       return;
     }
-    // Check if user is_verified
     if (loginResult && loginResult.user && loginResult.user.id) {
       try {
         const { data: profile, error: profileError } = await (
@@ -124,6 +149,7 @@ const Auth = () => {
         return;
       }
     }
+    router.replace("/(tabs)");
     setLoading(false);
   };
   const handleResendVerification = async () => {
@@ -163,7 +189,12 @@ const Auth = () => {
           {isSignUp ? (
             <RegisterForm onSubmit={handleSignUp} error={error} loading={loading} />
           ) : (
-            <LoginForm onSubmit={handleSignIn} error={error} loading={loading} />
+            <LoginForm
+              onSubmit={handleSignIn}
+              error={error}
+              loading={loading}
+              onForgotPassword={() => setShowForgotModal(true)}
+            />
           )}
           <Button
             mode="text"
@@ -205,6 +236,52 @@ const Auth = () => {
                 labelStyle={styles.closeButtonLabel}
               >
                 Close
+              </Button>
+            </View>
+          </PaperModal>
+        </Portal>
+
+        {/* Forgot Password Modal */}
+        <Portal>
+          <PaperModal
+            visible={showForgotModal}
+            onDismiss={() => setShowForgotModal(false)}
+            contentContainerStyle={styles.paperModalContent}
+          >
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            <Text style={styles.modalMessage}>
+              Enter your email address and we&apos;ll send you instructions to reset your password.
+            </Text>
+            <TextInput
+              label="Email"
+              value={forgotEmail}
+              onChangeText={setForgotEmail}
+              mode="outlined"
+              style={[styles.modalInput]}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              outlineColor={swimTheme.colors.primary}
+              activeOutlineColor={swimTheme.colors.primary}
+            />
+            <View style={styles.buttonContainer}>
+              <Button
+                mode="contained"
+                onPress={handleForgotPassword}
+                disabled={resetLoading}
+                loading={resetLoading}
+                style={resetLoading ? [styles.button, styles.buttonDisabled] : styles.button}
+                labelStyle={styles.buttonLabel}
+                contentStyle={styles.buttonContent}
+              >
+                {resetLoading ? "Sending..." : "Send Reset Instructions"}
+              </Button>
+              <Button
+                mode="text"
+                onPress={() => setShowForgotModal(false)}
+                style={styles.closeButton}
+                labelStyle={styles.closeButtonLabel}
+              >
+                Cancel
               </Button>
             </View>
           </PaperModal>
@@ -298,6 +375,11 @@ const styles = StyleSheet.create({
     color: swimTheme.colors.primary,
     fontWeight: "600",
     fontSize: 15,
+  },
+  modalInput: {
+    width: "100%",
+    marginBottom: 20,
+    backgroundColor: "#fff",
   },
 });
 

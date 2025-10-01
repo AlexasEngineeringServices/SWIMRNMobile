@@ -3,7 +3,7 @@ import { Redirect, router } from "expo-router";
 import { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { Avatar, Button, Divider, Text } from "react-native-paper";
+import { Avatar, Button, Text } from "react-native-paper";
 import { swimTheme } from "../../hooks/useCustomTheme";
 import { supabase } from "../../lib/supabase";
 
@@ -59,17 +59,19 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Avatar.Text
-          size={80}
-          label={
-            userProfile
-              ? `${userProfile.firstname?.[0] || ""}${userProfile.lastname?.[0] || ""}`
-              : "U"
-          }
-          style={{ backgroundColor: swimTheme.colors.primary }}
-          color={swimTheme.colors.card}
-        />
-        <Text variant="headlineMedium" style={styles.name}>
+        <View style={styles.avatarContainer}>
+          <Avatar.Text
+            size={84}
+            label={
+              userProfile
+                ? `${userProfile.firstname?.[0] || ""}${userProfile.lastname?.[0] || ""}`
+                : "U"
+            }
+            style={styles.avatar}
+            color="#FFF"
+          />
+        </View>
+        <Text variant="headlineSmall" style={styles.name}>
           {userProfile?.firstname} {userProfile?.lastname}
         </Text>
         <Text variant="bodyLarge" style={styles.email}>
@@ -77,16 +79,59 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      <Divider style={styles.divider} />
+      <View style={styles.content}>
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Account Settings
+          </Text>
+          <View style={styles.optionContainer}>
+            <Button
+              mode="text"
+              icon="account-edit"
+              contentStyle={styles.optionButton}
+              labelStyle={styles.optionButtonText}
+              onPress={() => {}}
+            >
+              Edit Profile
+            </Button>
+            <Button
+              mode="text"
+              icon="lock-reset"
+              contentStyle={styles.optionButton}
+              labelStyle={styles.optionButtonText}
+              onPress={() => {}}
+            >
+              Change Password
+            </Button>
+          </View>
+        </View>
 
-      <View style={styles.content}>{/* Add more profile options here if needed */}</View>
+        <View style={styles.section}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            About
+          </Text>
+          <View style={styles.optionContainer}>
+            <Button
+              mode="text"
+              icon="information-outline"
+              contentStyle={styles.optionButton}
+              labelStyle={styles.optionButtonText}
+              onPress={() => {}}
+            >
+              About SWIM App
+            </Button>
+          </View>
+        </View>
+      </View>
 
       <View style={styles.footer}>
         <Button
           mode="contained"
+          icon="logout"
           onPress={handleSignOut}
           style={styles.signOutButton}
-          buttonColor={swimTheme.colors.notification}
+          contentStyle={styles.signOutContent}
+          labelStyle={styles.signOutLabel}
         >
           Sign Out
         </Button>
@@ -102,8 +147,17 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    padding: 32,
-    backgroundColor: swimTheme.colors.card,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    backgroundColor: swimTheme.colors.primary + "10",
+  },
+  avatarContainer: {
+    padding: 3,
+    borderRadius: 45,
+    backgroundColor: swimTheme.colors.primary + "20",
+  },
+  avatar: {
+    backgroundColor: swimTheme.colors.primary,
   },
   name: {
     color: swimTheme.colors.text,
@@ -111,24 +165,52 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   email: {
-    color: swimTheme.colors.border,
+    color: swimTheme.colors.text + "80",
     ...swimTheme.fonts.regular,
     marginTop: 4,
-  },
-  divider: {
-    backgroundColor: swimTheme.colors.border,
-    height: 1,
   },
   content: {
     flex: 1,
     padding: 20,
   },
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    color: swimTheme.colors.text,
+    ...swimTheme.fonts.medium,
+    marginBottom: 8,
+    paddingHorizontal: 8,
+  },
+  optionContainer: {
+    backgroundColor: swimTheme.colors.card,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  optionButton: {
+    height: 56,
+    justifyContent: "flex-start",
+    paddingHorizontal: 16,
+  },
+  optionButtonText: {
+    color: swimTheme.colors.text,
+    ...swimTheme.fonts.regular,
+    fontSize: 16,
+  },
   footer: {
     padding: 20,
-    borderTopColor: swimTheme.colors.border,
-    borderTopWidth: 1,
+    paddingBottom: 32,
   },
   signOutButton: {
     borderRadius: 8,
+    backgroundColor: swimTheme.colors.primary,
+  },
+  signOutContent: {
+    height: 48,
+  },
+  signOutLabel: {
+    color: "#FFF",
+    ...swimTheme.fonts.medium,
+    fontSize: 16,
   },
 });

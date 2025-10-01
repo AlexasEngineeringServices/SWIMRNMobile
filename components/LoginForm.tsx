@@ -14,11 +14,12 @@ const schema = z.object({
 
 type LoginFormProps = {
   onSubmit: (data: { email: string; password: string }) => void;
+  onForgotPassword?: () => void;
   error?: string;
   loading?: boolean;
 };
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, error, loading }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onForgotPassword, error, loading }) => {
   const [showPassword, setShowPassword] = useState(false);
   const {
     control,
@@ -91,11 +92,26 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, error, loading }) => {
       >
         Sign In
       </Button>
+      <Button
+        mode="text"
+        onPress={() => onForgotPassword && onForgotPassword()}
+        style={styles.forgotPasswordButton}
+        labelStyle={styles.forgotPasswordLabel}
+      >
+        Forgot Password?
+      </Button>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  forgotPasswordButton: {
+    marginTop: 8,
+  },
+  forgotPasswordLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: swimTheme.colors.primary,
+  },
   title: {
     fontSize: FONT_SIZES.xl,
     lineHeight: LINE_HEIGHTS.xl,
