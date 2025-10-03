@@ -6,13 +6,17 @@ export async function signInWithEmail({ email, password }: { email: string; pass
   return { data, error };
 }
 
+interface DeviceInput {
+  device_number: string;
+  device_name: string;
+}
+
 interface SignUpData {
   firstname: string;
   lastname: string;
   email: string;
   password: string;
-  device_number: string;
-  device_name: string;
+  devices: DeviceInput[];
 }
 
 export const signUpWithEmail = async (data: SignUpData) => {
@@ -53,26 +57,25 @@ export const signUpWithEmail = async (data: SignUpData) => {
     let deviceData = null;
     let profileData = null;
 
-    // 2. Insert device info
+    // 2. Insert multiple devices info
     try {
-      const { data: newDeviceData, error: deviceError } = await supabase
+      const devicesToInsert = data.devices.map((device) => ({
+        user_id: user.id,
+        device_number: device.device_number,
+        device_name: device.device_name,
+      }));
+
+      const { data: newDevicesData, error: deviceError } = await supabase
         .from("devices")
-        .insert([
-          {
-            user_id: user.id,
-            device_number: data.device_number,
-            device_name: data.device_name,
-          },
-        ])
-        .select()
-        .single();
+        .insert(devicesToInsert)
+        .select();
 
       if (deviceError) {
         console.error("Device creation error:", deviceError);
         throw deviceError;
       }
 
-      deviceData = newDeviceData;
+      deviceData = newDevicesData;
 
       // 3. Insert profile info linked to device
       const { data: newProfileData, error: profileError } = await supabase
@@ -83,7 +86,6 @@ export const signUpWithEmail = async (data: SignUpData) => {
             firstname: data.firstname,
             lastname: data.lastname,
             email: data.email,
-            device_id: deviceData.id,
           },
         ])
         .select()
@@ -96,8 +98,9 @@ export const signUpWithEmail = async (data: SignUpData) => {
 
       profileData = newProfileData;
     } catch (error) {
-      if (deviceData?.id) {
-        await supabase.from("devices").delete().eq("id", deviceData.id);
+      if (deviceData && deviceData.length > 0) {
+        const deviceIds = deviceData.map((device) => device.id);
+        await supabase.from("devices").delete().in("id", deviceIds);
       }
       throw error;
     }

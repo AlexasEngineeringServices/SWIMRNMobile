@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { StyleSheet, View } from "react-native";
+import { FlatList, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Button, Text, TextInput } from "react-native-paper";
 import { z } from "zod";
 import { FONT_SIZES, LINE_HEIGHTS } from "../constants/theme";
@@ -20,12 +20,17 @@ const step1Schema = z
     path: ["confirmPassword"],
   });
 
-const step2Schema = z.object({
+const deviceSchema = z.object({
   deviceNumber: z.string().min(1, { message: "Device number is required" }),
   deviceName: z.string().min(1, { message: "Device name is required" }),
 });
 
+const step2Schema = z.object({
+  devices: z.array(deviceSchema).min(1, { message: "At least one device is required" }),
+});
+
 type Step1Data = z.infer<typeof step1Schema>;
+type DeviceData = z.infer<typeof deviceSchema>;
 type Step2Data = z.infer<typeof step2Schema>;
 
 type RegisterFormProps = {
@@ -35,8 +40,10 @@ type RegisterFormProps = {
 };
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading }) => {
+  const flatListRef = useRef<FlatList>(null);
   const [step, setStep] = useState(1);
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
+  const [devices, setDevices] = useState<DeviceData[]>([{ deviceNumber: "", deviceName: "" }]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -63,7 +70,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
     formState: { errors: errors2 },
   } = useForm<Step2Data>({
     resolver: zodResolver(step2Schema),
-    defaultValues: { deviceNumber: "", deviceName: "" },
+    defaultValues: {
+      devices: [{ deviceNumber: "", deviceName: "" }],
+    },
   });
 
   const handleStep1 = (data: Step1Data) => {
@@ -75,7 +84,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
     if (step1Data) {
       const combinedData = {
         ...step1Data,
-        ...data,
+        devices: data.devices,
       };
       onSubmit(combinedData);
     }
@@ -233,50 +242,94 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
       {step === 2 && (
         <View>
           <Text style={styles.note}>
-            Enter the required device number and device name from purchased device
+            Enter the required device number and device name from purchased device/s
           </Text>
-          <Controller
-            control={control2}
-            name="deviceNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                label="Device Number"
-                autoCapitalize="none"
-                mode="outlined"
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                outlineColor={swimTheme.colors.primary}
-                activeOutlineColor={swimTheme.colors.primary}
-                error={!!errors2.deviceNumber}
-              />
+          <FlatList
+            ref={flatListRef}
+            data={devices}
+            showsVerticalScrollIndicator={true}
+            persistentScrollbar={true}
+            style={[styles.deviceList, devices.length > 1 && styles.deviceListWithScrollbar]}
+            keyExtractor={(_, index) => index.toString()}
+            renderItem={({ item, index }) => (
+              <View style={styles.deviceContainer}>
+                <View style={styles.deviceHeader}>
+                  <Text style={styles.deviceTitle}>Device {index + 1}</Text>
+                  {index > 0 && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const newDevices = [...devices];
+                        newDevices.splice(index, 1);
+                        setDevices(newDevices);
+                      }}
+                    >
+                      <Text style={styles.removeButton}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Controller
+                  control={control2}
+                  name={`devices.${index}.deviceNumber`}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      label="Device Number"
+                      autoCapitalize="none"
+                      mode="outlined"
+                      style={styles.input}
+                      value={value as string}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      outlineColor={swimTheme.colors.primary}
+                      activeOutlineColor={swimTheme.colors.primary}
+                      error={!!errors2.devices?.[index]?.deviceNumber}
+                    />
+                  )}
+                />
+                {errors2.devices?.[index]?.deviceNumber && (
+                  <Text style={styles.error}>
+                    {errors2.devices[index]?.deviceNumber?.message as string}
+                  </Text>
+                )}
+                <Controller
+                  control={control2}
+                  name={`devices.${index}.deviceName`}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      label="Device Name"
+                      autoCapitalize="words"
+                      mode="outlined"
+                      style={styles.input}
+                      value={value as string}
+                      onChangeText={onChange}
+                      onBlur={onBlur}
+                      outlineColor={swimTheme.colors.primary}
+                      activeOutlineColor={swimTheme.colors.primary}
+                      error={!!errors2.devices?.[index]?.deviceName}
+                    />
+                  )}
+                />
+                {errors2.devices?.[index]?.deviceName && (
+                  <Text style={styles.error}>
+                    {errors2.devices[index]?.deviceName?.message as string}
+                  </Text>
+                )}
+              </View>
             )}
           />
-          {errors2.deviceNumber && (
-            <Text style={styles.error}>{errors2.deviceNumber.message as string}</Text>
-          )}
-          <Controller
-            control={control2}
-            name="deviceName"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                label="Device Name"
-                autoCapitalize="words"
-                mode="outlined"
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                outlineColor={swimTheme.colors.primary}
-                activeOutlineColor={swimTheme.colors.primary}
-                error={!!errors2.deviceName}
-              />
-            )}
-          />
-          {errors2.deviceName && (
-            <Text style={styles.error}>{errors2.deviceName.message as string}</Text>
-          )}
+          <TouchableOpacity
+            style={styles.addDeviceButton}
+            onPress={() => {
+              setDevices([...devices, { deviceNumber: "", deviceName: "" }]);
+              // Small delay to ensure the new device is rendered before scrolling
+              setTimeout(() => {
+                if (flatListRef.current) {
+                  flatListRef.current.scrollToEnd({ animated: true });
+                }
+              }, 100);
+            }}
+          >
+            <Text style={styles.addDeviceText}>Add Another Device</Text>
+          </TouchableOpacity>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.buttonRow}>
             <Button
@@ -308,6 +361,52 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
 };
 
 const styles = StyleSheet.create({
+  deviceList: {
+    maxHeight: 400,
+    marginBottom: 10,
+  },
+  deviceListWithScrollbar: {
+    paddingRight: 4, // Add padding to prevent scrollbar from overlapping content
+  },
+  deviceScrollContainer: {
+    maxHeight: 400,
+    marginBottom: 10,
+  },
+  deviceContainer: {
+    marginBottom: 16,
+    backgroundColor: "#f5f5f5",
+    padding: 16,
+    borderRadius: 8,
+  },
+  deviceHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  deviceTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "600",
+    color: swimTheme.colors.text,
+  },
+  removeButton: {
+    color: swimTheme.colors.notification,
+    fontWeight: "600",
+  },
+  addDeviceButton: {
+    backgroundColor: "#fff",
+    borderColor: swimTheme.colors.primary,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: "center",
+  },
+  addDeviceText: {
+    color: swimTheme.colors.primary,
+    fontWeight: "600",
+    fontSize: FONT_SIZES.base,
+  },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
