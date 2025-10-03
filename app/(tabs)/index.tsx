@@ -1,77 +1,13 @@
-import { Session } from "@supabase/supabase-js";
-import { Redirect } from "expo-router";
-import { useEffect, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { Divider, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { swimTheme } from "../../hooks/useCustomTheme";
-import { supabase } from "../../lib/supabase";
+import { useAuthStore } from "../../store/authStore";
 
 export default function HomeScreen() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<{
-    firstname?: string;
-    email?: string;
-    device_name?: string;
-    device_number?: string;
-  } | null>(null);
+  const { user, loading } = useAuthStore();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-    });
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-    });
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      // First fetch the profile
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("firstname, email")
-        .eq("id", userId)
-        .single();
-
-      if (profileError) throw profileError;
-
-      // Then fetch the device information
-      const { data: device, error: deviceError } = await supabase
-        .from("devices")
-        .select("device_name, device_number")
-        .eq("user_id", userId)
-        .single();
-
-      if (deviceError && deviceError.code !== "PGRST116") {
-        // Ignore not found error
-        throw deviceError;
-      }
-
-      setUserProfile({
-        ...profile,
-        device_name: device?.device_name || "No device",
-        device_number: device?.device_number || "Not registered",
-      });
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Protect the route - redirect to auth if no session
-  if (!session && !loading) {
-    return <Redirect href="/auth" />;
-  }
+  if (loading) return null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -81,7 +17,7 @@ export default function HomeScreen() {
             Welcome back,
           </Text>
           <Text variant="headlineLarge" style={styles.nameText}>
-            {userProfile?.firstname || "User"}
+            {user?.firstname || "User"}
           </Text>
         </View>
       </View>
@@ -99,7 +35,7 @@ export default function HomeScreen() {
                 Device Name
               </Text>
               <Text variant="bodyMedium" style={styles.deviceValue}>
-                {userProfile?.device_name || "No device"}
+                {user?.device_name || "No device"}
               </Text>
             </View>
             <View style={styles.deviceRow}>
@@ -107,7 +43,7 @@ export default function HomeScreen() {
                 Device Number
               </Text>
               <Text variant="bodyMedium" style={styles.deviceValue}>
-                {userProfile?.device_number || "Not registered"}
+                {user?.device_number || "Not registered"}
               </Text>
             </View>
           </View>

@@ -7,8 +7,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 import { swimTheme } from "../hooks/useCustomTheme";
+import { supabase } from "../lib/supabase";
 import { signInWithEmail, signUpWithEmail } from "../services/auth";
 import { sendVerificationEmail } from "../services/email";
+import { useAuthStore } from "../store/authStore";
 
 interface LoginData {
   email: string;
@@ -113,6 +115,8 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const { initialize } = useAuthStore();
+
   const handleSignIn = async (data: LoginData) => {
     setLoading(true);
     setError("");
@@ -125,31 +129,35 @@ const Auth = () => {
     }
     if (loginResult && loginResult.user && loginResult.user.id) {
       try {
-        const { data: profile, error: profileError } = await (
-          await import("../lib/supabase")
-        ).supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("id, email, is_verified")
           .eq("id", loginResult.user.id)
           .single();
+
         if (profileError || !profile) {
           setError("Could not fetch user profile");
           setLoading(false);
           return;
         }
+
         if (!profile.is_verified) {
           setPendingUser({ user_id: profile.id, email: profile.email });
           setShowVerifyModal(true);
           setLoading(false);
           return;
         }
-      } catch {
+
+        // Initialize auth store to update the session and user data
+        await initialize();
+        router.replace("/(tabs)");
+      } catch (err) {
+        console.error("Error checking verification status:", err);
         setError("Error checking verification status");
         setLoading(false);
         return;
       }
     }
-    router.replace("/(tabs)");
     setLoading(false);
   };
   const handleResendVerification = async () => {
@@ -380,6 +388,13 @@ const styles = StyleSheet.create({
     width: "100%",
     marginBottom: 20,
     backgroundColor: "#fff",
+  },
+  testButtonContainer: {
+    marginTop: 20,
+    gap: 10,
+  },
+  testButton: {
+    backgroundColor: swimTheme.colors.primary,
   },
 });
 

@@ -1,60 +1,22 @@
-import { Redirect, router } from "expo-router";
-
-import { Session } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Avatar, Button, Text } from "react-native-paper";
 import { swimTheme } from "../../hooks/useCustomTheme";
-import { supabase } from "../../lib/supabase";
+import { useAuthStore } from "../../store/authStore";
 
 export default function ProfileScreen() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<{
-    firstname?: string;
-    lastname?: string;
-    email?: string;
-  } | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-    });
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("firstname, lastname, email")
-        .eq("id", userId)
-        .single();
-
-      if (error) throw error;
-      setUserProfile(profile);
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { user, loading, signOut } = useAuthStore();
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await signOut();
       router.replace("/auth");
     } catch (error) {
       console.error("Error signing out:", error);
     }
   };
 
-  if (!session && !loading) {
-    return <Redirect href="/auth" />;
-  }
+  if (loading) return null;
 
   return (
     <View style={styles.container}>
@@ -62,20 +24,16 @@ export default function ProfileScreen() {
         <View style={styles.avatarContainer}>
           <Avatar.Text
             size={84}
-            label={
-              userProfile
-                ? `${userProfile.firstname?.[0] || ""}${userProfile.lastname?.[0] || ""}`
-                : "U"
-            }
+            label={user ? `${user.firstname?.[0] || ""}${user.lastname?.[0] || ""}` : "U"}
             style={styles.avatar}
             color="#FFF"
           />
         </View>
         <Text variant="headlineSmall" style={styles.name}>
-          {userProfile?.firstname} {userProfile?.lastname}
+          {user?.firstname} {user?.lastname}
         </Text>
         <Text variant="bodyLarge" style={styles.email}>
-          {userProfile?.email}
+          {user?.email}
         </Text>
       </View>
 
