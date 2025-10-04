@@ -22,8 +22,11 @@ interface RegisterData {
   lastName: string;
   email: string;
   password: string;
-  deviceNumber: string;
-  deviceName: string;
+  confirmPassword: string;
+  devices: {
+    deviceNumber: string;
+    deviceName: string;
+  }[];
 }
 
 const Auth = () => {
@@ -67,10 +70,11 @@ const Auth = () => {
       lastname: data.lastName,
       email: data.email,
       password: data.password,
-      device_number: data.deviceNumber,
-      device_name: data.deviceName,
+      devices: data.devices.map((device) => ({
+        device_number: device.deviceNumber,
+        device_name: device.deviceName,
+      })),
     };
-
     const { data: result, error } = await signUpWithEmail(signUpData);
 
     if (error) {

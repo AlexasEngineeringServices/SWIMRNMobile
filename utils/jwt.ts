@@ -4,7 +4,6 @@ const JWT_SECRET = "super-jwt-secret-key";
 
 export async function verifyJWT(token: string) {
   try {
-    console.log("Attempting to verify token:", { token });
     const encoder = new TextEncoder();
     const secretKey = await crypto.subtle.importKey(
       "raw",

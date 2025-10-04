@@ -55,14 +55,11 @@ export const updatePasswordUser = async (userId: string, password: string) => {
 
 export const validatePasswordResetToken = async (token: string, email: string) => {
   try {
-    console.log("validatePasswordResetToken called with:", { token, email });
     // First verify JWT
     const { payload, error: jwtError } = await verifyJWT(token);
     if (jwtError) {
       throw new Error(jwtError);
     }
-
-    console.log("JWT Payload:", payload);
 
     // Verify token contains required claims
     if (!payload || typeof payload !== "object") {

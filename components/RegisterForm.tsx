@@ -6,6 +6,7 @@ import { Button, Text, TextInput } from "react-native-paper";
 import { z } from "zod";
 import { FONT_SIZES, LINE_HEIGHTS } from "../constants/theme";
 import { swimTheme } from "../hooks/useCustomTheme";
+import { supabase } from "../lib/supabase";
 
 const step1Schema = z
   .object({
@@ -25,9 +26,28 @@ const deviceSchema = z.object({
   deviceName: z.string().min(1, { message: "Device name is required" }),
 });
 
-const step2Schema = z.object({
-  devices: z.array(deviceSchema).min(1, { message: "At least one device is required" }),
-});
+const step2Schema = z
+  .object({
+    devices: z.array(deviceSchema).min(1, { message: "At least one device is required" }),
+  })
+  .superRefine(async (data, ctx) => {
+    // Check each device number against Supabase
+    for (const [index, device] of data.devices.entries()) {
+      const { data: existingDevice } = await supabase
+        .from("devices")
+        .select("device_number")
+        .eq("device_number", device.deviceNumber)
+        .single();
+
+      if (existingDevice) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Device number ${device.deviceNumber} is already registered`,
+          path: [`devices.${index}.deviceNumber`],
+        });
+      }
+    }
+  });
 
 type Step1Data = z.infer<typeof step1Schema>;
 type DeviceData = z.infer<typeof deviceSchema>;

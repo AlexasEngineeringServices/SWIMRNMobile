@@ -21,6 +21,106 @@ interface SignUpData {
 
 export const signUpWithEmail = async (data: SignUpData) => {
   try {
+    if (data.devices.length === 0) {
+      return {
+        data: null,
+        error: {
+          message: "Invalid device data",
+          details: "At least one device must be provided",
+        },
+      };
+    }
+
+    // Validate each device has required properties and non-empty values
+    for (const [index, device] of data.devices.entries()) {
+      if (!device) {
+        return {
+          data: null,
+          error: {
+            message: "Invalid device data",
+            details: `Device at position ${index + 1} is undefined`,
+          },
+        };
+      }
+
+      if (typeof device.device_number !== "string" || device.device_number.trim() === "") {
+        return {
+          data: null,
+          error: {
+            message: "Invalid device data",
+            details: `Device number is required and cannot be empty for device ${index + 1}`,
+          },
+        };
+      }
+
+      if (typeof device.device_name !== "string" || device.device_name.trim() === "") {
+        return {
+          data: null,
+          error: {
+            message: "Invalid device data",
+            details: `Device name is required and cannot be empty for device ${index + 1}`,
+          },
+        };
+      }
+    }
+
+    // Check for duplicate device numbers and names before proceeding
+    const deviceNumbers = data.devices.map((device) => device.device_number);
+    const deviceNames = data.devices.map((device) => device.device_name);
+
+    // First check for duplicates within the submitted devices
+    const uniqueDeviceNumbers = new Set(deviceNumbers);
+    const uniqueDeviceNames = new Set(deviceNames);
+
+    // Check for duplicate device numbers
+    if (uniqueDeviceNumbers.size !== deviceNumbers.length) {
+      return {
+        data: null,
+        error: {
+          message: "Duplicate device numbers found in your submission",
+          details: "Each device must have a unique device number",
+        },
+      };
+    }
+
+    // Check for duplicate device names
+    if (uniqueDeviceNames.size !== deviceNames.length) {
+      return {
+        data: null,
+        error: {
+          message: "Duplicate device names found in your submission",
+          details: "Each device must have a unique name",
+        },
+      };
+    }
+
+    // Then check if any device numbers already exist in the database
+    const { data: existingDevices, error: deviceCheckError } = await supabase
+      .from("devices")
+      .select("device_number")
+      .in("device_number", deviceNumbers);
+
+    if (deviceCheckError) {
+      return {
+        data: null,
+        error: {
+          message: "Error checking device numbers",
+          details: deviceCheckError,
+        },
+      };
+    }
+
+    if (existingDevices && existingDevices.length > 0) {
+      const existingNumbers = existingDevices.map((d) => d.device_number).join(", ");
+      return {
+        data: null,
+        error: {
+          message: "Device numbers already registered",
+          details: `The following device numbers are already registered: ${existingNumbers}`,
+        },
+      };
+    }
+
     // 1. Sign up with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,

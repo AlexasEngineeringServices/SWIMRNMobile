@@ -58,7 +58,6 @@ export default function ResetPassword() {
         const { valid, error: validationError } = await validatePasswordResetToken(token, email);
 
         if (validationError || !valid) {
-          console.log("Token validation failed:", validationError);
           setError("This reset link is invalid or has expired.");
           return;
         }
