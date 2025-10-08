@@ -5,15 +5,16 @@ import { Button } from "react-native-paper";
 import { FONT_SIZES } from "../constants/theme";
 import { swimTheme } from "../hooks/useCustomTheme";
 import {
+  checkExistingVerificationToken,
   deleteEmailVerificationToken,
   sendVerificationEmail,
   validateEmailVerificationToken,
-} from "../services/email";
+} from "../services/emailService";
 import {
   getProfileById,
   getProfileVerificationStatus,
   updateProfileVerificationStatus,
-} from "../services/profile";
+} from "../services/profileService";
 
 export default function VerifyEmail() {
   const params = useLocalSearchParams();
@@ -25,6 +26,7 @@ export default function VerifyEmail() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [resending, setResending] = useState<boolean>(false);
+  const [hasExistingToken, setHasExistingToken] = useState<boolean>(false);
   const [userData, setUserData] = useState<{
     user_id?: string;
     email?: string;
@@ -39,6 +41,19 @@ export default function VerifyEmail() {
           setError("No verification token provided");
           setVerifying(false);
           return;
+        }
+
+        // Check for existing tokens in the email_verification_tokens table
+        if (userData?.user_id) {
+          const { data: existingTokens, error: tokenError } = await checkExistingVerificationToken(
+            userData.user_id
+          );
+
+          setHasExistingToken(!!existingTokens);
+
+          if (tokenError) {
+            console.error("Error checking existing tokens:", tokenError);
+          }
         }
 
         // First check if the email is already verified
@@ -118,7 +133,7 @@ export default function VerifyEmail() {
     }
 
     verifyEmail();
-  }, [token, router, email]);
+  }, [token, router, email, userData?.user_id]);
 
   const handleResendVerification = async () => {
     try {
@@ -204,19 +219,21 @@ export default function VerifyEmail() {
               ? "Your verification link has expired. Please request a new one."
               : "Something went wrong with the verification. Please try again."}
           </Text>
-          <View style={styles.buttonContainer}>
-            <Button
-              mode="contained"
-              onPress={handleResendVerification}
-              disabled={resending}
-              loading={resending}
-              style={resending ? [styles.button, styles.buttonDisabled] : styles.button}
-              labelStyle={styles.buttonLabel}
-              contentStyle={styles.buttonContent}
-            >
-              {resending ? "Sending..." : "Resend Verification Email"}
-            </Button>
-          </View>
+          {hasExistingToken && (
+            <View style={styles.buttonContainer}>
+              <Button
+                mode="contained"
+                onPress={handleResendVerification}
+                disabled={resending}
+                loading={resending}
+                style={resending ? [styles.button, styles.buttonDisabled] : styles.button}
+                labelStyle={styles.buttonLabel}
+                contentStyle={styles.buttonContent}
+              >
+                {resending ? "Sending..." : "Resend Verification Email"}
+              </Button>
+            </View>
+          )}
         </View>
         <View style={styles.brandingContainer}>
           <Text style={styles.brandingText}>Powered by</Text>

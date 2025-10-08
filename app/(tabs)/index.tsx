@@ -1,11 +1,29 @@
+import { useEffect } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { Divider, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { swimTheme } from "../../hooks/useCustomTheme";
 import { useAuthStore } from "../../store/authStore";
+import { useWaterConsumptionStore } from "../../store/waterConsumptionStore";
 
 export default function HomeScreen() {
-  const { user, loading } = useAuthStore();
+  const { user, loading: authLoading } = useAuthStore();
+  const {
+    dailyTarget,
+    consumed,
+    dailyGoal,
+    loading: waterLoading,
+    error,
+    fetchDailyStats,
+  } = useWaterConsumptionStore();
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDailyStats();
+    }
+  }, [user?.id, fetchDailyStats]);
+
+  const loading = authLoading || waterLoading;
 
   if (loading) return null;
 
@@ -56,7 +74,7 @@ export default function HomeScreen() {
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
               <Text variant="headlineMedium" style={styles.statNumber}>
-                0L
+                {dailyTarget / 1000}L
               </Text>
               <Text variant="bodySmall" style={styles.statLabel}>
                 Daily Target
@@ -64,7 +82,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.statCard}>
               <Text variant="headlineMedium" style={styles.statNumber}>
-                0L
+                {(consumed / 1000).toFixed(1)}L
               </Text>
               <Text variant="bodySmall" style={styles.statLabel}>
                 Consumed
@@ -72,7 +90,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.statCard}>
               <Text variant="headlineMedium" style={styles.statNumber}>
-                0%
+                {dailyGoal}%
               </Text>
               <Text variant="bodySmall" style={styles.statLabel}>
                 Daily Goal

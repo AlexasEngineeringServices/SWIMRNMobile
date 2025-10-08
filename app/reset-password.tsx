@@ -10,7 +10,7 @@ import {
   deletePasswordResetToken,
   updatePasswordUser,
   validatePasswordResetToken,
-} from "../services/passwordReset";
+} from "../services/passwordResetService";
 
 const resetPasswordSchema = z
   .object({

@@ -42,6 +42,25 @@ export const sendVerificationEmail = async ({ user_id, email }: SendVerification
   }
 };
 
+export const checkExistingVerificationToken = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("email_verification_tokens")
+      .select("token")
+      .eq("user_id", userId)
+      .single();
+
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error: any) {
+    console.error("Error checking existing verification token:", error);
+    return {
+      data: null,
+      error: error.message || "Failed to check existing verification token",
+    };
+  }
+};
+
 export const validateEmailVerificationToken = async (token: string, email: string) => {
   try {
     // First verify JWT

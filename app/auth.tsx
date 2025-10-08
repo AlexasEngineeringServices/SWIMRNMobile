@@ -1,4 +1,4 @@
-import { sendPasswordResetEmail } from "@/services/passwordReset";
+import { sendPasswordResetEmail } from "@/services/passwordResetService";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
@@ -8,8 +8,8 @@ import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 import { swimTheme } from "../hooks/useCustomTheme";
 import { supabase } from "../lib/supabase";
-import { signInWithEmail, signUpWithEmail } from "../services/auth";
-import { sendVerificationEmail } from "../services/email";
+import { signInWithEmail, signUpWithEmail } from "../services/authService";
+import { sendVerificationEmail } from "../services/emailService";
 import { useAuthStore } from "../store/authStore";
 
 interface LoginData {
@@ -55,7 +55,10 @@ const Auth = () => {
         [{ text: "OK", onPress: () => setShowForgotModal(false) }]
       );
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to send password reset email");
+      Alert.alert(
+        "Error",
+        error.message || "Failed to send password reset email. Please check your email correctly."
+      );
     } finally {
       setResetLoading(false);
     }
@@ -140,7 +143,8 @@ const Auth = () => {
           .single();
 
         if (profileError || !profile) {
-          setError("Could not fetch user profile");
+          setError("Invalid credentials");
+          Alert.alert("Invalid credentials");
           setLoading(false);
           return;
         }

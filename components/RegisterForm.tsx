@@ -31,21 +31,49 @@ const step2Schema = z
     devices: z.array(deviceSchema).min(1, { message: "At least one device is required" }),
   })
   .superRefine(async (data, ctx) => {
-    // Check each device number against Supabase
-    for (const [index, device] of data.devices.entries()) {
-      const { data: existingDevice } = await supabase
+    if (!data.devices || data.devices.length === 0) return;
+
+    const deviceNumbersToCheck = data.devices
+      .map((device) => device.deviceNumber?.trim()?.toLowerCase())
+      .filter(Boolean);
+
+    try {
+      const { data: existingDevices, error } = await supabase
         .from("devices")
         .select("device_number")
-        .eq("device_number", device.deviceNumber)
-        .single();
+        .in("device_number", deviceNumbersToCheck);
 
-      if (existingDevice) {
+      if (error) {
         ctx.addIssue({
-          code: "custom",
-          message: `Device number ${device.deviceNumber} is already registered`,
-          path: [`devices.${index}.deviceNumber`],
+          code: z.ZodIssueCode.custom,
+          message: "Error checking device numbers",
+          path: ["devices"],
+        });
+        return;
+      }
+
+      if (existingDevices && existingDevices.length > 0) {
+        const existingDeviceNumbers = new Set(
+          existingDevices.map((d) => d.device_number.toLowerCase())
+        );
+
+        data.devices.forEach((device, index) => {
+          const deviceNumber = device.deviceNumber?.trim()?.toLowerCase();
+          if (existingDeviceNumbers.has(deviceNumber)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `Device number ${device.deviceNumber} is already registered`,
+              path: ["devices", index, "deviceNumber"],
+            });
+          }
         });
       }
+    } catch (error) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Error validating device numbers",
+        path: ["devices"],
+      });
     }
   });
 
@@ -64,6 +92,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
   const [step, setStep] = useState(1);
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
   const [devices, setDevices] = useState<DeviceData[]>([{ deviceNumber: "", deviceName: "" }]);
+  const [deviceErrors, setDeviceErrors] = useState<{ [key: string]: string }>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -88,11 +117,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
     control: control2,
     handleSubmit: handleSubmit2,
     formState: { errors: errors2 },
+    setError: setError2,
   } = useForm<Step2Data>({
     resolver: zodResolver(step2Schema),
     defaultValues: {
       devices: [{ deviceNumber: "", deviceName: "" }],
     },
+    mode: "onSubmit",
   });
 
   const handleStep1 = (data: Step1Data) => {
@@ -101,12 +132,23 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
   };
 
   const handleStep2 = async (data: Step2Data) => {
-    if (step1Data) {
-      const combinedData = {
-        ...step1Data,
-        devices: data.devices,
-      };
-      onSubmit(combinedData);
+    console.log("handleStep2..");
+    try {
+      // Reset any previous errors
+      setDeviceErrors({});
+      console.log("Validating step 2 data:", data);
+
+      // Validation is now handled by Zod schema
+      if (step1Data) {
+        const combinedData = {
+          ...step1Data,
+          devices: data.devices,
+        };
+        console.log("Submitting data:", combinedData);
+        onSubmit(combinedData);
+      }
+    } catch (error: any) {
+      console.error("Validation error:", error);
     }
   };
 
@@ -305,9 +347,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
                     />
                   )}
                 />
-                {errors2.devices?.[index]?.deviceNumber && (
+                {(errors2.devices?.[index]?.deviceNumber || deviceErrors[index]) && (
                   <Text style={styles.error}>
-                    {errors2.devices[index]?.deviceNumber?.message as string}
+                    {deviceErrors[index] || errors2.devices?.[index]?.deviceNumber?.message}
                   </Text>
                 )}
                 <Controller
@@ -354,7 +396,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
           <View style={styles.buttonRow}>
             <Button
               mode="outlined"
-              style={[styles.button, styles.backButton]}
+              style={[styles.button, styles.backButton, loading && styles.buttonDisabled]}
               labelStyle={[styles.buttonLabel, styles.backButtonLabel]}
               contentStyle={styles.buttonContent}
               onPress={() => setStep(1)}

@@ -11,7 +11,6 @@ interface UserProfile {
   device_number?: string;
   is_verified?: boolean;
   created_at?: string;
-  updated_at?: string;
 }
 
 interface AuthState {
@@ -31,7 +30,7 @@ export const useAuthStore = create<AuthState>((set) => {
     // Fetch user profile
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("id, firstname, lastname, email, is_verified, created_at, updated_at")
+      .select("id, firstname, lastname, email, is_verified, created_at")
       .eq("id", userId)
       .single();
 
