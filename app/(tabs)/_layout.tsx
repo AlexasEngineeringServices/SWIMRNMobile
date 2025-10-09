@@ -31,6 +31,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="usage-history"
+          options={{
+            title: "Usage History",
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="water" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="profile"
           options={{
             title: "Profile",
