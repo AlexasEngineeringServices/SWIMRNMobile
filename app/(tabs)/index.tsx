@@ -103,7 +103,10 @@ export default function HomeScreen() {
                   <View
                     style={[
                       styles.barFill,
-                      { width: `${item.value * 10}%`, backgroundColor: swimTheme.colors.primary },
+                      {
+                        width: `${(item.value / 10) * 100}%`,
+                        backgroundColor: swimTheme.colors.primary,
+                      },
                     ]}
                   />
                 </View>
