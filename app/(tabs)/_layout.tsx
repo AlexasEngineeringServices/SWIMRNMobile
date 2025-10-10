@@ -40,6 +40,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="devices"
+          options={{
+            title: "Devices",
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="cellphone-link" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="profile"
           options={{
             title: "Profile",
