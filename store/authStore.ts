@@ -101,7 +101,16 @@ export const useAuthStore = create<AuthState>((set) => {
                 break;
             }
           } catch (error) {
-            console.error("Error in auth state change:", error);
+            if (
+              !(
+                typeof error === "object" &&
+                error !== null &&
+                "code" in error &&
+                (error as any).code === "PGRST116"
+              )
+            ) {
+              console.error("Error in auth state change:", error);
+            }
             // Reset state on error
             set({ session: null, user: null });
           }
