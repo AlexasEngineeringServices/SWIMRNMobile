@@ -8,7 +8,16 @@ export interface WaterUsageData {
 }
 
 export const mockWaterUsageData: WaterUsageData[] = [
-  // Today's data (Oct 16)
+  // Today's data (Oct 17)
+  {
+    roundCount: 15,
+    slimCount: 8,
+    roundVoidCount: 4.0,
+    slimVoidCount: 3.0,
+    enqueuedAt: new Date(2025, 9, 17, 10, 45).toISOString(),
+    azureDeviceId: "device-001",
+  },
+  // Oct 16 data
   {
     roundCount: 8,
     slimCount: 4,

@@ -62,7 +62,7 @@ export default function HomeScreen() {
     moment.utc(entry.enqueuedAt).isSame(today, "day")
   );
 
-  // Sum of current readings
+  // Sum of current readings (only today's readings)
   const currentSum = currentReadings.reduce((sum, entry) => sum + entry.roundCount, 0);
 
   // Get the last reading date (excluding today)
@@ -79,11 +79,8 @@ export default function HomeScreen() {
   // Get only the latest reading
   const latestReading = lastReadings[0];
 
-  // Sum of last reading (only the latest one)
-  const lastSum = latestReading ? latestReading.roundCount : 0;
-
-  // Calculate continuous increment (cumulative)
-  const dailyIncrement = currentSum + lastSum;
+  // Use only today's sum for the increment display
+  const dailyIncrement = currentSum;
 
   // Circular progress value for Increment (normalized between 0 and 1)
   const incrementPercent = Math.max(0, Math.min(1, dailyIncrement / 10));
@@ -142,15 +139,15 @@ export default function HomeScreen() {
                 />
               </Svg>
               <View style={styles.chartCenter}>
-                <Text style={styles.chartValue}>{dailyIncrement}L</Text>
-                <Text style={styles.chartLabel}>Increment</Text>
+                <Text style={styles.chartValue}>{currentSum}L</Text>
+                <Text style={styles.chartLabel}>Today&apos;s Usage</Text>
               </View>
             </View>
             <View style={styles.statsCard}>
               <Text style={styles.statsText}>
                 <Text style={{ color: swimTheme.colors.border }}>Last Reading:</Text>{" "}
                 <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
-                  {lastSum}L
+                  {latestReading ? latestReading.roundCount : 0}L
                 </Text>
               </Text>
               <Text
@@ -167,9 +164,9 @@ export default function HomeScreen() {
                 </Text>
               </Text>
               <Text style={styles.statsText}>
-                <Text style={{ color: swimTheme.colors.border }}>Increment:</Text>{" "}
+                <Text style={{ color: swimTheme.colors.border }}>Today&apos;s Total:</Text>{" "}
                 <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
-                  {dailyIncrement}L
+                  {currentSum}L
                 </Text>
               </Text>
             </View>
