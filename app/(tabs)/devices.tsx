@@ -3,16 +3,7 @@ import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { Alert, FlatList, StyleSheet, View } from "react-native";
-import {
-  Button,
-  Card,
-  Divider,
-  IconButton,
-  Modal,
-  Portal,
-  Text,
-  TextInput,
-} from "react-native-paper";
+import { Button, Divider, IconButton, Modal, Portal, Text, TextInput } from "react-native-paper";
 import { z } from "zod";
 import { swimTheme } from "../../hooks/useCustomTheme";
 import { supabase } from "../../lib/supabase";
@@ -91,7 +82,7 @@ export default function DevicesScreen() {
             }
           });
         }
-      } catch (error) {
+      } catch (_error) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Error validating device numbers",
@@ -231,101 +222,120 @@ export default function DevicesScreen() {
 
   // Render device card
   const renderItem = ({ item }: { item: Device }) => (
-    <Card style={styles.card}>
-      <Card.Content>
-        {editingId === item.id ? (
-          <View>
-            <TextInput
-              label="Device Name"
-              value={editName}
-              onChangeText={setEditName}
-              style={styles.input}
-            />
-            <TextInput
-              label="Device Number"
-              value={editNumber}
-              onChangeText={(text) => setEditNumber(text.toLowerCase())}
-              style={styles.input}
-              autoCapitalize="none"
-            />
-            {formErrors.edit && (
-              <Text style={{ color: swimTheme.colors.notification }}>{formErrors.edit}</Text>
-            )}
-            <Button
-              mode="contained"
-              style={styles.saveBtn}
-              onPress={() => handleEditDevice(item.id)}
-              loading={loading}
-            >
-              Save
-            </Button>
-            <Button mode="text" onPress={() => setEditingId(null)}>
-              Cancel
-            </Button>
-          </View>
-        ) : (
-          <View style={styles.deviceRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.deviceName}>{item.device_name}</Text>
-              <Text style={styles.deviceNumber}>{item.device_number}</Text>
-              <Text style={styles.createdAt}>
-                {moment.utc(item.created_at).format("MMM DD, YYYY HH:mm")}
-              </Text>
+    <View style={styles.card}>
+      {editingId === item.id ? (
+        <View>
+          <TextInput
+            label="Device Name"
+            value={editName}
+            onChangeText={setEditName}
+            style={styles.input}
+          />
+          <TextInput
+            label="Device Number"
+            value={editNumber}
+            onChangeText={(text) => setEditNumber(text.toLowerCase())}
+            style={styles.input}
+            autoCapitalize="none"
+          />
+          {formErrors.edit && (
+            <Text style={{ color: swimTheme.colors.notification }}>{formErrors.edit}</Text>
+          )}
+          <Button
+            mode="contained"
+            style={styles.saveBtn}
+            onPress={() => handleEditDevice(item.id)}
+            loading={loading}
+          >
+            Save
+          </Button>
+          <Button mode="text" onPress={() => setEditingId(null)}>
+            Cancel
+          </Button>
+        </View>
+      ) : (
+        <>
+          <View style={styles.deviceHeaderRow}>
+            <Text style={styles.deviceTitle}>Device {item.device_number.padStart(3, "0")}</Text>
+            <View style={styles.actionButtons}>
+              <IconButton
+                icon="pencil"
+                size={24}
+                onPress={() => {
+                  setEditingId(item.id);
+                  setEditName(item.device_name);
+                  setEditNumber(item.device_number);
+                }}
+              />
+              <IconButton icon="delete" size={24} onPress={() => handleDeleteDevice(item.id)} />
             </View>
-            <IconButton
-              icon="pencil"
-              size={24}
-              onPress={() => {
-                setEditingId(item.id);
-                setEditName(item.device_name);
-                setEditNumber(item.device_number);
-              }}
-            />
-            <IconButton icon="delete" size={24} onPress={() => handleDeleteDevice(item.id)} />
           </View>
-        )}
-      </Card.Content>
-    </Card>
+          <Text style={styles.dateText}>
+            Latest (UTC): {moment.utc(item.created_at).format("YYYY-MM-DD HH:mm:ss")}
+          </Text>
+          <View style={styles.metricsContainer}>
+            <View style={styles.metricsRow}>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>Round Δ</Text>
+                <Text style={styles.metricValue}>0</Text>
+              </View>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>Slim Δ</Text>
+                <Text style={styles.metricValue}>0</Text>
+              </View>
+            </View>
+            <View style={styles.metricsRow}>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>Round Void Δ</Text>
+                <Text style={styles.metricValue}>0</Text>
+              </View>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricLabel}>Slim Void Δ</Text>
+                <Text style={styles.metricValue}>0</Text>
+              </View>
+            </View>
+          </View>
+        </>
+      )}
+    </View>
   );
 
   // Skeleton loader for device cards
   const renderSkeleton = () => (
     <>
       {[...Array(3)].map((_, idx) => (
-        <Card key={idx} style={styles.card}>
-          <Card.Content>
-            <View
-              style={{
-                height: 18,
-                width: 120,
-                backgroundColor: swimTheme.colors.border,
-                borderRadius: 8,
-                marginBottom: 12,
-                opacity: 0.5,
-              }}
-            />
-            <View
-              style={{
-                height: 14,
-                width: 180,
-                backgroundColor: swimTheme.colors.border,
-                borderRadius: 8,
-                marginBottom: 8,
-                opacity: 0.4,
-              }}
-            />
-            <View
-              style={{
-                height: 14,
-                width: 140,
-                backgroundColor: swimTheme.colors.border,
-                borderRadius: 8,
-                marginBottom: 8,
-                opacity: 0.4,
-              }}
-            />
-          </Card.Content>
-        </Card>
+        <View key={idx} style={styles.card}>
+          <View
+            style={{
+              height: 24,
+              width: 150,
+              backgroundColor: swimTheme.colors.border,
+              borderRadius: 8,
+              marginBottom: 12,
+              opacity: 0.5,
+            }}
+          />
+          <View
+            style={{
+              height: 16,
+              width: 200,
+              backgroundColor: swimTheme.colors.border,
+              borderRadius: 8,
+              marginBottom: 8,
+              opacity: 0.4,
+            }}
+          />
+          <View
+            style={{
+              height: 14,
+              width: 160,
+              backgroundColor: swimTheme.colors.border,
+              borderRadius: 8,
+              marginBottom: 8,
+              opacity: 0.4,
+            }}
+          />
+        </View>
       ))}
     </>
   );
@@ -504,6 +514,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
   },
+
   error: {
     color: swimTheme.colors.notification,
     marginBottom: 12,
@@ -545,31 +556,42 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   card: {
-    marginBottom: 16,
-    marginHorizontal: 1,
-    backgroundColor: swimTheme.colors.card,
+    backgroundColor: "#fff",
     borderRadius: 16,
-    elevation: 2,
-    overflow: "hidden",
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderTopWidth: 8,
+    borderTopColor: swimTheme.colors.primary,
   },
-  deviceRow: {
+  deviceHeaderRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 4,
   },
-  deviceName: {
-    fontSize: 18,
-    fontWeight: "bold",
+  deviceTitle: {
+    fontSize: 20,
+    fontWeight: "600",
     color: swimTheme.colors.text,
   },
-  deviceNumber: {
-    fontSize: 14,
+  deviceNameText: {
+    fontSize: 16,
     color: swimTheme.colors.primary,
     marginBottom: 4,
   },
   createdAt: {
-    fontSize: 12,
+    fontSize: 14,
     color: swimTheme.colors.border,
     marginBottom: 4,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   emptyText: {
     textAlign: "center",
@@ -640,6 +662,37 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: "100%",
     alignItems: "center",
+  },
+  dateText: {
+    fontSize: 14,
+    color: swimTheme.colors.border,
+    marginBottom: 4,
+  },
+  metricsContainer: {
+    marginTop: 12,
+  },
+  metricsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  metricBox: {
+    flex: 1,
+    marginHorizontal: 4,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
+  },
+  metricLabel: {
+    fontSize: 14,
+    color: swimTheme.colors.border,
+    marginBottom: 4,
+  },
+  metricValue: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: swimTheme.colors.primary,
   },
   modalAddAnotherBtn: {
     marginBottom: 10,

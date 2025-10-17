@@ -110,130 +110,126 @@ export default function HomeScreen() {
 
         {/* Daily Water Consumption Card */}
         <View style={styles.chartContainerCard}>
-          <View style={styles.chartContainer}>
-            {/* Modern Circular Progress for Increment with value labels */}
-            <View
-              style={{
-                alignItems: "center",
-                marginVertical: 16,
-                justifyContent: "center",
-              }}
-            >
-              <View style={styles.chartWrapper}>
-                <Svg width={220} height={220} style={{ transform: [{ rotate: "-90deg" }] }}>
-                  {/* Background Circle */}
-                  <Circle
-                    cx={110}
-                    cy={110}
-                    r={90}
-                    stroke={swimTheme.colors.border}
-                    strokeWidth={20}
-                    fill="transparent"
-                  />
-                  {/* Progress Circle */}
-                  <Circle
-                    cx={110}
-                    cy={110}
-                    r={90}
-                    stroke={swimTheme.colors.primary}
-                    strokeWidth={20}
-                    fill="transparent"
-                    strokeDasharray={`${2 * Math.PI * 90}`}
-                    strokeDashoffset={2 * Math.PI * 90 * (1 - incrementPercent)}
-                  />
-                </Svg>
-                <View style={styles.chartCenter}>
-                  <Text style={styles.chartValue}>{dailyIncrement}L</Text>
-                  <Text style={styles.chartLabel}>Increment</Text>
-                </View>
+          {/* Modern Circular Progress for Increment with value labels */}
+          <View
+            style={{
+              alignItems: "center",
+              marginVertical: 16,
+              justifyContent: "center",
+            }}
+          >
+            <View style={styles.chartWrapper}>
+              <Svg width={220} height={220} style={{ transform: [{ rotate: "-90deg" }] }}>
+                {/* Background Circle */}
+                <Circle
+                  cx={110}
+                  cy={110}
+                  r={90}
+                  stroke={swimTheme.colors.border}
+                  strokeWidth={20}
+                  fill="transparent"
+                />
+                {/* Progress Circle */}
+                <Circle
+                  cx={110}
+                  cy={110}
+                  r={90}
+                  stroke={swimTheme.colors.primary}
+                  strokeWidth={20}
+                  fill="transparent"
+                  strokeDasharray={`${2 * Math.PI * 90}`}
+                  strokeDashoffset={2 * Math.PI * 90 * (1 - incrementPercent)}
+                />
+              </Svg>
+              <View style={styles.chartCenter}>
+                <Text style={styles.chartValue}>{dailyIncrement}L</Text>
+                <Text style={styles.chartLabel}>Increment</Text>
               </View>
-              <View style={styles.statsCard}>
-                <Text style={styles.statsText}>
-                  <Text style={{ color: swimTheme.colors.border }}>Last Reading:</Text>{" "}
-                  <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
-                    {lastSum}L
-                  </Text>
+            </View>
+            <View style={styles.statsCard}>
+              <Text style={styles.statsText}>
+                <Text style={{ color: swimTheme.colors.border }}>Last Reading:</Text>{" "}
+                <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
+                  {lastSum}L
                 </Text>
-                <Text
-                  style={{
-                    color: swimTheme.colors.text,
-                    fontSize: 20,
-                    fontWeight: "500",
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text style={{ color: swimTheme.colors.border }}>Current Reading:</Text>{" "}
-                  <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
-                    {currentSum}L
-                  </Text>
+              </Text>
+              <Text
+                style={{
+                  color: swimTheme.colors.text,
+                  fontSize: 20,
+                  fontWeight: "500",
+                  marginBottom: 12,
+                }}
+              >
+                <Text style={{ color: swimTheme.colors.border }}>Current Reading:</Text>{" "}
+                <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
+                  {currentSum}L
                 </Text>
-                <Text style={styles.statsText}>
-                  <Text style={{ color: swimTheme.colors.border }}>Increment:</Text>{" "}
-                  <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
-                    {dailyIncrement}L
-                  </Text>
+              </Text>
+              <Text style={styles.statsText}>
+                <Text style={{ color: swimTheme.colors.border }}>Increment:</Text>{" "}
+                <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
+                  {dailyIncrement}L
                 </Text>
-              </View>
+              </Text>
             </View>
           </View>
         </View>
 
         <View style={styles.header}>
           <View style={styles.titleSection}>
-            <Text style={styles.titleText}>Daily Water Consumption</Text>
+            <Text style={styles.titleText}>Devices Readings</Text>
           </View>
         </View>
 
         {/* Device Information Card */}
         <View style={styles.devicesContainerCard}>
-          <View style={styles.devicesContainer}>
-            {Array.from(new Set(mockWaterUsageData.map((d) => d.azureDeviceId))).map((deviceId) => {
-              // Get all readings for this device
-              const readings = mockWaterUsageData.filter((d) => d.azureDeviceId === deviceId);
-              // Get latest reading
-              const latest = readings.reduce((prev, curr) =>
-                moment.utc(curr.enqueuedAt).isAfter(moment.utc(prev.enqueuedAt)) ? curr : prev
-              );
-              // Check if latest reading is from today
-              const isToday = moment.utc(latest.enqueuedAt).isSame(today, "day");
+          {Array.from(new Set(mockWaterUsageData.map((d) => d.azureDeviceId))).map((deviceId) => {
+            // Get all readings for this device
+            const readings = mockWaterUsageData.filter((d) => d.azureDeviceId === deviceId);
+            // Get latest reading
+            const latest = readings.reduce((prev, curr) =>
+              moment.utc(curr.enqueuedAt).isAfter(moment.utc(prev.enqueuedAt)) ? curr : prev
+            );
+            // Check if latest reading is from today
+            const isToday = moment.utc(latest.enqueuedAt).isSame(today, "day");
 
-              return (
-                <View key={deviceId} style={styles.deviceCardRedesign}>
-                  <View style={styles.deviceHeaderRow}>
-                    <Text style={styles.deviceTitleRedesign}>
-                      Device {deviceId.replace("device-", "").padStart(3, "0")}
-                    </Text>
-                  </View>
-                  <Text style={styles.deviceDateRedesign}>
-                    Latest (UTC): {moment.utc(latest.enqueuedAt).format("YYYY-MM-DD HH:mm:ss")}
+            return (
+              <View key={deviceId} style={styles.deviceCardRedesign}>
+                <View style={styles.deviceHeaderRow}>
+                  <Text style={styles.deviceTitleRedesign}>
+                    Device {deviceId.replace("device-", "").padStart(3, "0")}
                   </Text>
-                  {!isToday && <Text style={styles.notTodayText}>Not today</Text>}
-                  <View style={styles.metricsContainer}>
-                    <View style={styles.metricsRow}>
-                      <View style={styles.metricBox}>
-                        <Text style={styles.metricLabel}>Round Δ</Text>
-                        <Text style={styles.metricValue}>{latest.roundCount}</Text>
-                      </View>
-                      <View style={styles.metricBox}>
-                        <Text style={styles.metricLabel}>Slim Δ</Text>
-                        <Text style={styles.metricValue}>{latest.slimCount}</Text>
-                      </View>
+                </View>
+                <Text style={styles.deviceDateRedesign}>
+                  Latest (UTC): {moment.utc(latest.enqueuedAt).format("YYYY-MM-DD HH:mm:ss")}
+                </Text>
+                {!isToday && <Text style={styles.notTodayText}>Not today</Text>}
+                <View style={styles.metricsContainer}>
+                  <View style={styles.metricsRow}>
+                    <View style={styles.metricBox}>
+                      <Text style={styles.metricLabel}>Round Δ</Text>
+                      <Text style={styles.metricValue}>{latest.roundCount}</Text>
                     </View>
-                    <View style={styles.metricsRow}>
-                      <View style={styles.metricBox}>
-                        <Text style={styles.metricLabel}>Round Void Δ</Text>
-                        <Text style={styles.metricValue}>{latest.roundVoidCount}</Text>
-                      </View>
-                      <View style={styles.metricBox}>
-                        <Text style={styles.metricLabel}>Slim Void Δ</Text>
-                        <Text style={styles.metricValue}>{latest.slimVoidCount}</Text>
-                      </View>
+                    <View style={styles.metricBox}>
+                      <Text style={styles.metricLabel}>Slim Δ</Text>
+                      <Text style={styles.metricValue}>{latest.slimCount}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.metricsRow}>
+                    <View style={styles.metricBox}>
+                      <Text style={styles.metricLabel}>Round Void Δ</Text>
+                      <Text style={styles.metricValue}>{latest.roundVoidCount}</Text>
+                    </View>
+                    <View style={styles.metricBox}>
+                      <Text style={styles.metricLabel}>Slim Void Δ</Text>
+                      <Text style={styles.metricValue}>{latest.slimVoidCount}</Text>
                     </View>
                   </View>
                 </View>
-              );
-            })}
-          </View>
+              </View>
+            );
+          })}
           {/* <Button
             mode="contained"
             style={styles.viewMoreBtn}
@@ -351,9 +347,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
   },
-  devicesContainer: {
-    marginTop: 16,
-  },
   deviceCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -415,7 +408,7 @@ const styles = StyleSheet.create({
     backgroundColor: swimTheme.colors.background,
   },
   header: {
-    paddingVertical: 8,
+    marginVertical: 8,
     paddingHorizontal: 2,
     backgroundColor: swimTheme.colors.background,
   },
@@ -428,7 +421,7 @@ const styles = StyleSheet.create({
   titleText: {
     color: swimTheme.colors.text,
     ...swimTheme.fonts.bold,
-    fontSize: 18,
+    fontSize: 24,
     flexShrink: 1,
   },
   nameText: {
@@ -460,7 +453,6 @@ const styles = StyleSheet.create({
   },
   devicesContainerCard: {
     borderRadius: 16,
-    paddingVertical: 12,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -500,10 +492,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 20,
-  },
-  chartContainer: {
-    marginTop: 16,
-    marginBottom: 8,
   },
   barRow: {
     flexDirection: "row",
