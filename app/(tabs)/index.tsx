@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import moment from "moment";
 import { useEffect } from "react";
 import { Platform, ScrollView, StyleSheet, View } from "react-native";
-import { Button, Divider, Text } from "react-native-paper";
+import { Text } from "react-native-paper";
 import Svg, { Circle } from "react-native-svg";
 import { swimTheme } from "../../hooks/useCustomTheme";
 import { mockWaterUsageData, WaterUsageData } from "../../services/mockWaterUsageData";
@@ -29,8 +29,8 @@ export default function HomeScreen() {
       : mockWaterUsageData.filter((d) => d.azureDeviceId === fallbackDeviceId);
 
   // Debug: show which deviceId we used and how many readings we have
-  console.log('deviceId:', deviceId, 'fallbackDeviceId:', fallbackDeviceId);
-  console.log('deviceReadings count:', deviceReadings.length);
+  console.log("deviceId:", deviceId, "fallbackDeviceId:", fallbackDeviceId);
+  console.log("deviceReadings count:", deviceReadings.length);
 
   // Get current readings (today) and last readings (most recent past date)
   const today = moment.utc();
@@ -194,38 +194,47 @@ export default function HomeScreen() {
               const latest = readings.reduce((prev, curr) =>
                 moment.utc(curr.enqueuedAt).isAfter(moment.utc(prev.enqueuedAt)) ? curr : prev
               );
+              // Check if latest reading is from today
+              const isToday = moment.utc(latest.enqueuedAt).isSame(today, "day");
+
               return (
                 <View key={deviceId} style={styles.deviceCardRedesign}>
-                  <Text style={styles.deviceTitleRedesign}>
-                    Device {deviceId.replace("device-", "")}
-                  </Text>
+                  <View style={styles.deviceHeaderRow}>
+                    <Text style={styles.deviceTitleRedesign}>
+                      Device {deviceId.replace("device-", "").padStart(3, "0")}
+                    </Text>
+                  </View>
                   <Text style={styles.deviceDateRedesign}>
                     Latest (UTC): {moment.utc(latest.enqueuedAt).format("YYYY-MM-DD HH:mm:ss")}
                   </Text>
-                  <Divider style={{ marginVertical: 8 }} />
-                  <View style={styles.deviceStatsRow}>
-                    <View style={styles.deviceStatBox}>
-                      <Text style={styles.deviceStatLabel}>Round Δ</Text>
-                      <Text style={styles.deviceStatValue}>{latest.roundCount}</Text>
+                  {!isToday && <Text style={styles.notTodayText}>Not today</Text>}
+                  <View style={styles.metricsContainer}>
+                    <View style={styles.metricsRow}>
+                      <View style={styles.metricBox}>
+                        <Text style={styles.metricLabel}>Round Δ</Text>
+                        <Text style={styles.metricValue}>{latest.roundCount}</Text>
+                      </View>
+                      <View style={styles.metricBox}>
+                        <Text style={styles.metricLabel}>Slim Δ</Text>
+                        <Text style={styles.metricValue}>{latest.slimCount}</Text>
+                      </View>
                     </View>
-                    <View style={styles.deviceStatBox}>
-                      <Text style={styles.deviceStatLabel}>Slim Δ</Text>
-                      <Text style={styles.deviceStatValue}>{latest.slimCount}</Text>
-                    </View>
-                    <View style={styles.deviceStatBox}>
-                      <Text style={styles.deviceStatLabel}>Round Void Δ</Text>
-                      <Text style={styles.deviceStatValue}>{latest.roundVoidCount}</Text>
-                    </View>
-                    <View style={styles.deviceStatBox}>
-                      <Text style={styles.deviceStatLabel}>Slim Void Δ</Text>
-                      <Text style={styles.deviceStatValue}>{latest.slimVoidCount}</Text>
+                    <View style={styles.metricsRow}>
+                      <View style={styles.metricBox}>
+                        <Text style={styles.metricLabel}>Round Void Δ</Text>
+                        <Text style={styles.metricValue}>{latest.roundVoidCount}</Text>
+                      </View>
+                      <View style={styles.metricBox}>
+                        <Text style={styles.metricLabel}>Slim Void Δ</Text>
+                        <Text style={styles.metricValue}>{latest.slimVoidCount}</Text>
+                      </View>
                     </View>
                   </View>
                 </View>
               );
             })}
           </View>
-          <Button
+          {/* <Button
             mode="contained"
             style={styles.viewMoreBtn}
             contentStyle={styles.viewMoreContent}
@@ -233,7 +242,7 @@ export default function HomeScreen() {
             onPress={() => router.push("/(tabs)/usage-history")}
           >
             View More
-          </Button>
+          </Button> */}
         </View>
       </ScrollView>
 
@@ -246,47 +255,61 @@ const styles = StyleSheet.create({
   // Redesigned device card styles
   deviceCardRedesign: {
     backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 18,
-    borderWidth: 2,
-    borderColor: swimTheme.colors.border,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  deviceTitleRedesign: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: swimTheme.colors.text,
-    marginBottom: 2,
-  },
-  deviceDateRedesign: {
-    fontSize: 12,
-    color: swimTheme.colors.border,
-    marginBottom: 2,
-  },
-  deviceStatsRow: {
+  deviceHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 8,
+    alignItems: "center",
     marginBottom: 4,
   },
-  deviceStatBox: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 10,
-    marginHorizontal: 4,
-    backgroundColor: "#f7f7f7",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+  deviceTitleRedesign: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: swimTheme.colors.text,
   },
-  deviceStatLabel: {
-    fontSize: 12,
+  deviceDateRedesign: {
+    fontSize: 14,
     color: swimTheme.colors.border,
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  deviceStatValue: {
-    fontSize: 18,
-    fontWeight: "bold",
+  notTodayText: {
+    fontSize: 14,
+    color: swimTheme.colors.border,
+    marginBottom: 12,
+    fontStyle: "italic",
+  },
+  metricsContainer: {
+    marginTop: 12,
+  },
+  metricsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  metricBox: {
+    flex: 1,
+    marginHorizontal: 4,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 12,
+    alignItems: "center",
+  },
+  metricLabel: {
+    fontSize: 14,
+    color: swimTheme.colors.border,
+    marginBottom: 4,
+  },
+  metricValue: {
+    fontSize: 24,
+    fontWeight: "600",
     color: swimTheme.colors.primary,
   },
   chartWrapper: {
