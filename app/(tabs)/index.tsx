@@ -20,10 +20,35 @@ export default function HomeScreen() {
   }, [setUsageHistory]);
 
   // Filter readings for the current device
-  const deviceReadings = getDeviceReadings(deviceId);
+  // Try store first, fall back to mock data when store is empty or deviceId is missing
+  const deviceReadingsFromStore = getDeviceReadings(deviceId);
+  const fallbackDeviceId = deviceId || mockWaterUsageData[0]?.azureDeviceId;
+  const deviceReadings =
+    deviceReadingsFromStore && deviceReadingsFromStore.length > 0
+      ? deviceReadingsFromStore
+      : mockWaterUsageData.filter((d) => d.azureDeviceId === fallbackDeviceId);
+
+  // Debug: show which deviceId we used and how many readings we have
+  console.log('deviceId:', deviceId, 'fallbackDeviceId:', fallbackDeviceId);
+  console.log('deviceReadings count:', deviceReadings.length);
 
   // Get current readings (today) and last readings (most recent past date)
   const today = moment.utc();
+  // Debug: Print current UTC date
+  console.log("Current UTC date (today):", today.format("YYYY-MM-DD HH:mm:ss"));
+  // Debug: Print all enqueuedAt dates and their comparison to today
+  deviceReadings.forEach((entry) => {
+    const entryDate = moment.utc(entry.enqueuedAt);
+    const isToday = entryDate.isSame(today, "day");
+    console.log(
+      "enqueuedAt:",
+      entry.enqueuedAt,
+      "| UTC:",
+      entryDate.format("YYYY-MM-DD HH:mm:ss"),
+      "| isToday:",
+      isToday
+    );
+  });
 
   // Get all unique dates from readings, sorted in descending order
   const uniqueDates = [
@@ -71,24 +96,20 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.welcomeSection}>
-          <Text style={styles.greetingText}>
-            Welcome back, <Text style={styles.nameText}>{user?.firstname || "User"}</Text>
-          </Text>
-        </View>
-      </View>
-
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={true}
         indicatorStyle="black"
         contentContainerStyle={{ paddingBottom: 20 }}
       >
-        <View style={styles.dashboardCard}>
-          <Text variant="titleMedium" style={[styles.sectionTitle, { marginTop: 24 }]}>
-            Daily Water Consumption
-          </Text>
+        <View style={styles.header}>
+          <View style={styles.titleSection}>
+            <Text style={styles.titleText}>Daily Water Consumption</Text>
+          </View>
+        </View>
+
+        {/* Daily Water Consumption Card */}
+        <View style={styles.chartContainerCard}>
           <View style={styles.chartContainer}>
             {/* Modern Circular Progress for Increment with value labels */}
             <View
@@ -147,7 +168,7 @@ export default function HomeScreen() {
                   </Text>
                 </Text>
                 <Text style={styles.statsText}>
-                  <Text style={{ color: swimTheme.colors.border }}>Cumulative Total:</Text>{" "}
+                  <Text style={{ color: swimTheme.colors.border }}>Increment:</Text>{" "}
                   <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
                     {dailyIncrement}L
                   </Text>
@@ -155,45 +176,55 @@ export default function HomeScreen() {
               </View>
             </View>
           </View>
+        </View>
 
-          <Divider style={[styles.cardDivider, styles.sectionDivider]} />
-
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Device Information
-          </Text>
-
-          <View style={styles.devicesContainer}>
-            {user?.device_number && (
-              <View key={user.device_number} style={styles.deviceCard}>
-                <View style={styles.deviceHeader}>
-                  <Text style={styles.deviceTitle}>Water Meter Device</Text>
-                  <View
-                    style={[styles.deviceStatus, { backgroundColor: swimTheme.colors.primary }]}
-                  />
-                </View>
-                <Divider style={{ marginVertical: 12 }} />
-                <View style={styles.deviceInfo}>
-                  <View style={styles.deviceRow}>
-                    <Text variant="bodySmall" style={styles.deviceLabel}>
-                      Device Number
-                    </Text>
-                    <Text variant="bodyMedium" style={styles.deviceValue}>
-                      {user.device_number}
-                    </Text>
-                  </View>
-                  <View style={styles.deviceRow}>
-                    <Text variant="bodySmall" style={styles.deviceLabel}>
-                      Device Name
-                    </Text>
-                    <Text variant="bodyMedium" style={styles.deviceValue}>
-                      Water Meter Device
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
+        <View style={styles.header}>
+          <View style={styles.titleSection}>
+            <Text style={styles.titleText}>Daily Water Consumption</Text>
           </View>
+        </View>
 
+        {/* Device Information Card */}
+        <View style={styles.devicesContainerCard}>
+          <View style={styles.devicesContainer}>
+            {Array.from(new Set(mockWaterUsageData.map((d) => d.azureDeviceId))).map((deviceId) => {
+              // Get all readings for this device
+              const readings = mockWaterUsageData.filter((d) => d.azureDeviceId === deviceId);
+              // Get latest reading
+              const latest = readings.reduce((prev, curr) =>
+                moment.utc(curr.enqueuedAt).isAfter(moment.utc(prev.enqueuedAt)) ? curr : prev
+              );
+              return (
+                <View key={deviceId} style={styles.deviceCardRedesign}>
+                  <Text style={styles.deviceTitleRedesign}>
+                    Device {deviceId.replace("device-", "")}
+                  </Text>
+                  <Text style={styles.deviceDateRedesign}>
+                    Latest (UTC): {moment.utc(latest.enqueuedAt).format("YYYY-MM-DD HH:mm:ss")}
+                  </Text>
+                  <Divider style={{ marginVertical: 8 }} />
+                  <View style={styles.deviceStatsRow}>
+                    <View style={styles.deviceStatBox}>
+                      <Text style={styles.deviceStatLabel}>Round Δ</Text>
+                      <Text style={styles.deviceStatValue}>{latest.roundCount}</Text>
+                    </View>
+                    <View style={styles.deviceStatBox}>
+                      <Text style={styles.deviceStatLabel}>Slim Δ</Text>
+                      <Text style={styles.deviceStatValue}>{latest.slimCount}</Text>
+                    </View>
+                    <View style={styles.deviceStatBox}>
+                      <Text style={styles.deviceStatLabel}>Round Void Δ</Text>
+                      <Text style={styles.deviceStatValue}>{latest.roundVoidCount}</Text>
+                    </View>
+                    <View style={styles.deviceStatBox}>
+                      <Text style={styles.deviceStatLabel}>Slim Void Δ</Text>
+                      <Text style={styles.deviceStatValue}>{latest.slimVoidCount}</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
           <Button
             mode="contained"
             style={styles.viewMoreBtn}
@@ -212,6 +243,52 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Redesigned device card styles
+  deviceCardRedesign: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 18,
+    borderWidth: 2,
+    borderColor: swimTheme.colors.border,
+  },
+  deviceTitleRedesign: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: swimTheme.colors.text,
+    marginBottom: 2,
+  },
+  deviceDateRedesign: {
+    fontSize: 12,
+    color: swimTheme.colors.border,
+    marginBottom: 2,
+  },
+  deviceStatsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  deviceStatBox: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    marginHorizontal: 4,
+    backgroundColor: "#f7f7f7",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+  },
+  deviceStatLabel: {
+    fontSize: 12,
+    color: swimTheme.colors.border,
+    marginBottom: 2,
+  },
+  deviceStatValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: swimTheme.colors.primary,
+  },
   chartWrapper: {
     position: "relative",
     alignItems: "center",
@@ -239,10 +316,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 24,
     paddingHorizontal: 28,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
     alignSelf: "center",
     minWidth: 280,
   },
@@ -318,18 +391,18 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingVertical: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 2,
     backgroundColor: swimTheme.colors.background,
   },
-  welcomeSection: {
+  titleSection: {
     marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
   },
-  greetingText: {
-    color: swimTheme.colors.border,
-    ...swimTheme.fonts.regular,
+  titleText: {
+    color: swimTheme.colors.text,
+    ...swimTheme.fonts.bold,
     fontSize: 18,
     flexShrink: 1,
   },
@@ -343,9 +416,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
-  dashboardCard: {
+  chartContainerCard: {
     backgroundColor: swimTheme.colors.card,
     borderRadius: 16,
+    marginBottom: 20,
     padding: 12,
     ...Platform.select({
       ios: {
@@ -359,11 +433,20 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  sectionTitle: {
-    color: swimTheme.colors.text,
-    ...swimTheme.fonts.medium,
-    marginBottom: 4,
-    marginTop: 0,
+  devicesContainerCard: {
+    borderRadius: 16,
+    paddingVertical: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   cardDivider: {
     backgroundColor: swimTheme.colors.border,
