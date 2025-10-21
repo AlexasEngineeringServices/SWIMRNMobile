@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from "expo-router";
 import moment from "moment";
 import React, { useEffect, useState } from "react";
 import { FlatList, ListRenderItem, StyleSheet, View } from "react-native";
@@ -9,6 +10,7 @@ import { WaterUsageData, mockWaterUsageData } from "../../services/mockWaterUsag
 type TimeFilter = "daily" | "weekly" | "monthly";
 
 export default function UsageHistoryScreen() {
+  const { deviceId } = useLocalSearchParams<{ deviceId?: string }>();
   const [loading, setLoading] = useState(true);
   const [usageData, setUsageData] = useState<WaterUsageData[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("daily");
@@ -18,7 +20,12 @@ export default function UsageHistoryScreen() {
     try {
       setLoading(true);
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      setUsageData(mockWaterUsageData);
+      // If deviceId is provided, filter mockWaterUsageData for that device only
+      if (deviceId) {
+        setUsageData(mockWaterUsageData.filter((d) => d.azureDeviceId === deviceId));
+      } else {
+        setUsageData(mockWaterUsageData);
+      }
     } catch (error) {
       console.error("Error fetching usage history:", error);
     } finally {
@@ -70,7 +77,10 @@ export default function UsageHistoryScreen() {
 
   const Header = (
     <View style={{ backgroundColor: Colors.offWhite, marginBottom: 16 }}>
-      <Text style={styles.title}>Water Usage History</Text>
+      <Text style={styles.title}>
+        Water Usage History
+        {deviceId ? ` (Device ${deviceId.replace("device-", "").padStart(3, "0")})` : ""}
+      </Text>
       <SegmentedButtons
         value={timeFilter}
         onValueChange={(value) => setTimeFilter(value as TimeFilter)}
@@ -81,10 +91,10 @@ export default function UsageHistoryScreen() {
         ]}
         theme={{
           colors: {
-            secondaryContainer: Colors.mistGray, // gray for unselected
-            onSecondaryContainer: Colors.charcoal, // dark text for unselected
-            primary: Colors.offWhite, // white for selected
-            onPrimary: Colors.deepSkyBlue, // blue text for selected
+            secondaryContainer: Colors.mistGray,
+            onSecondaryContainer: Colors.charcoal,
+            primary: Colors.offWhite,
+            onPrimary: Colors.deepSkyBlue,
             outline: Colors.mistGray,
           },
         }}
@@ -94,7 +104,6 @@ export default function UsageHistoryScreen() {
     </View>
   );
 
-  // Skeleton loader for cards
   const renderSkeleton = () => (
     <>
       {[...Array(3)].map((_, idx) => (

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Platform, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import Svg, { Circle } from "react-native-svg";
+import { DeviceCard } from "../../components/DeviceCard";
 import { swimTheme } from "../../hooks/useCustomTheme";
 import { mockWaterUsageData, WaterUsageData } from "../../services/mockWaterUsageData";
 import { useAuthStore } from "../../store/authStore";
@@ -28,15 +29,8 @@ export default function HomeScreen() {
       ? deviceReadingsFromStore
       : mockWaterUsageData.filter((d) => d.azureDeviceId === fallbackDeviceId);
 
-  // Debug: show which deviceId we used and how many readings we have
-  console.log("deviceId:", deviceId, "fallbackDeviceId:", fallbackDeviceId);
-  console.log("deviceReadings count:", deviceReadings.length);
-
   // Get current readings (today) and last readings (most recent past date)
   const today = moment.utc();
-  // Debug: Print current UTC date
-  console.log("Current UTC date (today):", today.format("YYYY-MM-DD HH:mm:ss"));
-  // Debug: Print all enqueuedAt dates and their comparison to today
   deviceReadings.forEach((entry) => {
     const entryDate = moment.utc(entry.enqueuedAt);
     const isToday = entryDate.isSame(today, "day");
@@ -191,51 +185,18 @@ export default function HomeScreen() {
             // Check if latest reading is from today
             const isToday = moment.utc(latest.enqueuedAt).isSame(today, "day");
 
+            // Handler for swipe gesture
+            const handleSwipe = () => {
+              router.push({
+                pathname: "/(tabs)/usage-history",
+                params: { deviceId },
+              });
+            };
+
             return (
-              <View key={deviceId} style={styles.deviceCardRedesign}>
-                <View style={styles.deviceHeaderRow}>
-                  <Text style={styles.deviceTitleRedesign}>
-                    Device {deviceId.replace("device-", "").padStart(3, "0")}
-                  </Text>
-                </View>
-                <Text style={styles.deviceDateRedesign}>
-                  Latest (UTC): {moment.utc(latest.enqueuedAt).format("YYYY-MM-DD HH:mm:ss")}
-                </Text>
-                {!isToday && <Text style={styles.notTodayText}>Not today</Text>}
-                <View style={styles.metricsContainer}>
-                  <View style={styles.metricsRow}>
-                    <View style={styles.metricBox}>
-                      <Text style={styles.metricLabel}>Round Δ</Text>
-                      <Text style={styles.metricValue}>{latest.roundCount}</Text>
-                    </View>
-                    <View style={styles.metricBox}>
-                      <Text style={styles.metricLabel}>Slim Δ</Text>
-                      <Text style={styles.metricValue}>{latest.slimCount}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.metricsRow}>
-                    <View style={styles.metricBox}>
-                      <Text style={styles.metricLabel}>Round Void Δ</Text>
-                      <Text style={styles.metricValue}>{latest.roundVoidCount}</Text>
-                    </View>
-                    <View style={styles.metricBox}>
-                      <Text style={styles.metricLabel}>Slim Void Δ</Text>
-                      <Text style={styles.metricValue}>{latest.slimVoidCount}</Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
+              <DeviceCard key={deviceId} data={latest} isToday={isToday} onSwipe={handleSwipe} />
             );
           })}
-          {/* <Button
-            mode="contained"
-            style={styles.viewMoreBtn}
-            contentStyle={styles.viewMoreContent}
-            labelStyle={styles.viewMoreLabel}
-            onPress={() => router.push("/(tabs)/usage-history")}
-          >
-            View More
-          </Button> */}
         </View>
       </ScrollView>
 

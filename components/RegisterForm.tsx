@@ -132,19 +132,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
   };
 
   const handleStep2 = async (data: Step2Data) => {
-    console.log("handleStep2..");
     try {
-      // Reset any previous errors
       setDeviceErrors({});
-      console.log("Validating step 2 data:", data);
 
-      // Validation is now handled by Zod schema
       if (step1Data) {
         const combinedData = {
           ...step1Data,
           devices: data.devices,
         };
-        console.log("Submitting data:", combinedData);
         onSubmit(combinedData);
       }
     } catch (error: any) {

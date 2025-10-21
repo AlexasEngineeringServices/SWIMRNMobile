@@ -43,19 +43,11 @@ export default function DevicesScreen() {
         .map((device) => device.deviceNumber?.trim()?.toLowerCase())
         .filter(Boolean);
 
-      // Debugging logs
-      console.log("Device numbers to check:", deviceNumbersToCheck);
-      console.log("Devices array:", data.devices);
-
       try {
         const { data: existingDevices, error } = await supabase
           .from("devices")
           .select("device_number")
           .in("device_number", deviceNumbersToCheck);
-
-        // Debugging logs
-        console.log("Supabase response - existingDevices:", existingDevices);
-        console.log("Supabase response - error:", error);
 
         if (error) {
           ctx.addIssue({
