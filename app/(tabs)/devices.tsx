@@ -254,7 +254,7 @@ export default function DevicesScreen() {
           setEditNumber(item.device_number);
         }}
         onDelete={() => handleDeleteDevice(item.id)}
-        onSwipeLeft={() => setShowSwipeTip(true)}
+        onSwipeLeft={() => {}}
       />
     );
 
