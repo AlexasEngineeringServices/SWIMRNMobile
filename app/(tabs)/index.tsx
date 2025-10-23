@@ -1,10 +1,11 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import moment from "moment";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Platform, ScrollView, StyleSheet, View } from "react-native";
-import { Text } from "react-native-paper";
+import { Button, Dialog, Portal, Text } from "react-native-paper";
 import Svg, { Circle } from "react-native-svg";
-import { DeviceCard } from "../../components/DeviceCard";
+import { DashboardDeviceCard } from "../../components/DashboardDeviceCard";
 import { swimTheme } from "../../hooks/useCustomTheme";
 import { mockWaterUsageData, WaterUsageData } from "../../services/mockWaterUsageData";
 import { useAuthStore } from "../../store/authStore";
@@ -80,6 +81,7 @@ export default function HomeScreen() {
   const incrementPercent = Math.max(0, Math.min(1, dailyIncrement / 10));
 
   const router = useRouter();
+  const [showInstructions, setShowInstructions] = React.useState(true);
 
   const loading = authLoading;
 
@@ -111,7 +113,6 @@ export default function HomeScreen() {
           >
             <View style={styles.chartWrapper}>
               <Svg width={220} height={220} style={{ transform: [{ rotate: "-90deg" }] }}>
-                {/* Background Circle */}
                 <Circle
                   cx={110}
                   cy={110}
@@ -120,7 +121,6 @@ export default function HomeScreen() {
                   strokeWidth={20}
                   fill="transparent"
                 />
-                {/* Progress Circle */}
                 <Circle
                   cx={110}
                   cy={110}
@@ -188,25 +188,68 @@ export default function HomeScreen() {
             // Handler for swipe gesture
             const handleSwipe = () => {
               router.push({
-                pathname: "/(tabs)/usage-history",
+                pathname: "../usage-history",
                 params: { deviceId },
               });
             };
 
             return (
-              <DeviceCard key={deviceId} data={latest} isToday={isToday} onSwipe={handleSwipe} />
+              <DashboardDeviceCard
+                key={deviceId}
+                data={latest}
+                isToday={isToday}
+                onSwipe={handleSwipe}
+              />
             );
           })}
         </View>
       </ScrollView>
 
       <View style={styles.footer}>{/* Footer content if needed */}</View>
+
+      <Portal>
+        <Dialog visible={showInstructions} onDismiss={() => setShowInstructions(false)}>
+          <Dialog.Content>
+            <View style={styles.instructionContent}>
+              <MaterialCommunityIcons
+                name="gesture-swipe-horizontal"
+                size={40}
+                color={swimTheme.colors.primary}
+              />
+              <Text style={styles.instructionTitle}>Quick Tip</Text>
+              <Text style={styles.instructionText}>
+                Swipe any device card left or right to view its detailed usage history
+              </Text>
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button mode="contained" onPress={() => setShowInstructions(false)}>
+              Got it
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Redesigned device card styles
+  instructionContent: {
+    alignItems: "center",
+    paddingVertical: 16,
+  },
+  instructionTitle: {
+    fontSize: 22,
+    fontWeight: "600",
+    color: swimTheme.colors.text,
+    marginVertical: 12,
+  },
+  instructionText: {
+    fontSize: 16,
+    color: swimTheme.colors.text,
+    textAlign: "center",
+    lineHeight: 24,
+  },
   deviceCardRedesign: {
     backgroundColor: "#fff",
     borderRadius: 16,

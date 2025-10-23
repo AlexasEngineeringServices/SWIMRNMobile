@@ -7,16 +7,18 @@ import {
   PanResponderGestureState,
 } from "react-native";
 
-interface SwipeGestureProps {
+interface DeviceCardSwipeGestureProps {
   gestureStyle?: any;
   children?: React.ReactNode;
   onSwipePerformed: (direction: string) => void;
+  allowDirection?: ("left" | "right")[];
 }
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH;
+// Reduce threshold to 10% of screen width for more sensitive swipe
+const SWIPE_THRESHOLD = 0.1 * SCREEN_WIDTH;
 
-const SwipeGesture = (props: SwipeGestureProps) => {
+const DeviceCardSwipeGesture = (props: DeviceCardSwipeGestureProps) => {
   const pan = useRef(new Animated.ValueXY()).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -29,6 +31,8 @@ const SwipeGesture = (props: SwipeGestureProps) => {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
       onPanResponderMove: (evt, gestureState) => {
         // Only allow horizontal movement
         pan.setValue({ x: gestureState.dx, y: 0 });
@@ -44,19 +48,23 @@ const SwipeGesture = (props: SwipeGestureProps) => {
         const x = gestureState.dx;
         if (Math.abs(x) >= SWIPE_THRESHOLD) {
           // Swipe exceeded threshold
+          const direction = x > 0 ? "right" : "left";
+          if (!props.allowDirection || props.allowDirection.includes(direction)) {
+            props.onSwipePerformed(direction);
+          }
+          // Quick reset animation
           Animated.parallel([
-            Animated.spring(pan, {
-              toValue: { x: x > 0 ? SCREEN_WIDTH : -SCREEN_WIDTH, y: 0 },
+            Animated.timing(pan, {
+              toValue: { x: 0, y: 0 },
+              duration: 150,
               useNativeDriver: false,
             }),
             Animated.timing(fadeAnim, {
-              toValue: 0,
-              duration: 200,
+              toValue: 1,
+              duration: 150,
               useNativeDriver: false,
             }),
           ]).start(() => {
-            props.onSwipePerformed(x > 0 ? "right" : "left");
-            // Reset position after animation
             pan.setValue({ x: 0, y: 0 });
             fadeAnim.setValue(1);
           });
@@ -91,4 +99,4 @@ const SwipeGesture = (props: SwipeGestureProps) => {
   );
 };
 
-export default SwipeGesture;
+export default DeviceCardSwipeGesture;

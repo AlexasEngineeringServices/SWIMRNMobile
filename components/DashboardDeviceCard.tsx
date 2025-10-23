@@ -5,7 +5,7 @@ import { Animated, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { swimTheme } from "../hooks/useCustomTheme";
 import { WaterUsageData } from "../services/mockWaterUsageData";
-import DeviceCardSwipeGesture from "./DeviceCardSwipeGesture";
+import SwipeGesture from "./DeviceCardSwipeGesture";
 
 interface DashboardDeviceCardProps {
   data: WaterUsageData;
@@ -40,7 +40,7 @@ export const DashboardDeviceCard: React.FC<DashboardDeviceCardProps> = ({
   };
 
   return (
-    <DeviceCardSwipeGesture onSwipePerformed={handleSwipe} gestureStyle={styles.gestureContainer}>
+    <SwipeGesture onSwipePerformed={handleSwipe} gestureStyle={styles.gestureContainer}>
       <View style={styles.deviceCard}>
         <View style={styles.deviceHeader}>
           <Text style={styles.deviceTitle}>
@@ -82,7 +82,7 @@ export const DashboardDeviceCard: React.FC<DashboardDeviceCardProps> = ({
           </View>
         </View>
       </View>
-    </DeviceCardSwipeGesture>
+    </SwipeGesture>
   );
 };
 

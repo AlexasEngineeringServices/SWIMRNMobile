@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import moment from "moment";
 import React, { useEffect, useRef, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { Alert, FlatList, StyleSheet, View } from "react-native";
 import { Button, Divider, IconButton, Modal, Portal, Text, TextInput } from "react-native-paper";
 import { z } from "zod";
+import { DeviceActionCard } from "../../components/DeviceActionCard";
 import { swimTheme } from "../../hooks/useCustomTheme";
 import { supabase } from "../../lib/supabase";
 import {
@@ -17,6 +17,7 @@ import {
 import { useAuthStore } from "../../store/authStore";
 
 export default function DevicesScreen() {
+  const [showSwipeTip, setShowSwipeTip] = useState(true);
   const flatListRef = useRef<FlatList>(null);
   const { user } = useAuthStore();
   const [devices, setDevices] = useState<Device[]>([]);
@@ -212,85 +213,50 @@ export default function DevicesScreen() {
     ]);
   };
 
-  // Render device card
-  const renderItem = ({ item }: { item: Device }) => (
-    <View style={styles.card}>
-      {editingId === item.id ? (
-        <View>
-          <TextInput
-            label="Device Name"
-            value={editName}
-            onChangeText={setEditName}
-            style={styles.input}
-          />
-          <TextInput
-            label="Device Number"
-            value={editNumber}
-            onChangeText={(text) => setEditNumber(text.toLowerCase())}
-            style={styles.input}
-            autoCapitalize="none"
-          />
-          {formErrors.edit && (
-            <Text style={{ color: swimTheme.colors.notification }}>{formErrors.edit}</Text>
-          )}
-          <Button
-            mode="contained"
-            style={styles.saveBtn}
-            onPress={() => handleEditDevice(item.id)}
-            loading={loading}
-          >
-            Save
-          </Button>
-          <Button mode="text" onPress={() => setEditingId(null)}>
-            Cancel
-          </Button>
-        </View>
-      ) : (
-        <>
-          <View style={styles.deviceHeaderRow}>
-            <Text style={styles.deviceTitle}>Device {item.device_number.padStart(3, "0")}</Text>
-            <View style={styles.actionButtons}>
-              <IconButton
-                icon="pencil"
-                size={24}
-                onPress={() => {
-                  setEditingId(item.id);
-                  setEditName(item.device_name);
-                  setEditNumber(item.device_number);
-                }}
-              />
-              <IconButton icon="delete" size={24} onPress={() => handleDeleteDevice(item.id)} />
-            </View>
-          </View>
-          <Text style={styles.dateText}>
-            Latest (UTC): {moment.utc(item.created_at).format("YYYY-MM-DD HH:mm:ss")}
-          </Text>
-          <View style={styles.metricsContainer}>
-            <View style={styles.metricsRow}>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Round Δ</Text>
-                <Text style={styles.metricValue}>0</Text>
-              </View>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Slim Δ</Text>
-                <Text style={styles.metricValue}>0</Text>
-              </View>
-            </View>
-            <View style={styles.metricsRow}>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Round Void Δ</Text>
-                <Text style={styles.metricValue}>0</Text>
-              </View>
-              <View style={styles.metricBox}>
-                <Text style={styles.metricLabel}>Slim Void Δ</Text>
-                <Text style={styles.metricValue}>0</Text>
-              </View>
-            </View>
-          </View>
-        </>
-      )}
-    </View>
-  );
+  const renderItem = ({ item }: { item: Device }) =>
+    editingId === item.id ? (
+      <View style={styles.card}>
+        <TextInput
+          label="Device Name"
+          value={editName}
+          onChangeText={setEditName}
+          style={styles.input}
+        />
+        <TextInput
+          label="Device Number"
+          value={editNumber}
+          onChangeText={(text) => setEditNumber(text.toLowerCase())}
+          style={styles.input}
+          autoCapitalize="none"
+        />
+        {formErrors.edit && (
+          <Text style={{ color: swimTheme.colors.notification }}>{formErrors.edit}</Text>
+        )}
+        <Button
+          mode="contained"
+          style={styles.saveBtn}
+          onPress={() => handleEditDevice(item.id)}
+          loading={loading}
+        >
+          Save
+        </Button>
+        <Button mode="text" onPress={() => setEditingId(null)}>
+          Cancel
+        </Button>
+      </View>
+    ) : (
+      <DeviceActionCard
+        deviceNumber={item.device_number}
+        deviceName={item.device_name}
+        onEdit={() => {
+          setEditingId(item.id);
+          setEditName(item.device_name);
+          setEditNumber(item.device_number);
+        }}
+        onDelete={() => handleDeleteDevice(item.id)}
+        onSwipeLeft={() => setShowSwipeTip(true)}
+      />
+    );
 
   // Skeleton loader for device cards
   const renderSkeleton = () => (
@@ -491,6 +457,55 @@ export default function DevicesScreen() {
                 }
               />
             </View>
+          </View>
+        </Modal>
+        {/* Swipe direction tip modal */}
+        <Modal
+          visible={showSwipeTip}
+          onDismiss={() => setShowSwipeTip(false)}
+          contentContainerStyle={{
+            backgroundColor: "#f6f4fa",
+            margin: 24,
+            borderRadius: 24,
+            padding: 24,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View style={{ alignItems: "center" }}>
+            <IconButton
+              icon="gesture-swipe-left"
+              size={48}
+              theme={{ colors: { primary: swimTheme.colors.primary } }}
+            />
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "bold",
+                marginVertical: 12,
+                color: swimTheme.colors.text,
+              }}
+            >
+              Swipe Left & Right
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                color: swimTheme.colors.text,
+                textAlign: "center",
+                marginBottom: 24,
+              }}
+            >
+              Swipe left on a device card to reveal the Edit and Delete menu. Otherwise swipe right
+              to cancel or hide the edit and delete menu.
+            </Text>
+            <Button
+              mode="contained"
+              onPress={() => setShowSwipeTip(false)}
+              style={{ borderRadius: 24 }}
+            >
+              Got it
+            </Button>
           </View>
         </Modal>
       </Portal>

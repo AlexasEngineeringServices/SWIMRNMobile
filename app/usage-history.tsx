@@ -1,22 +1,25 @@
+import { useNavigation } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
 import moment from "moment";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, ListRenderItem, StyleSheet, View } from "react-native";
-import { Card, List, SegmentedButtons, Text } from "react-native-paper";
-import { Colors } from "../../constants/theme";
-
-import { WaterUsageData, mockWaterUsageData } from "../../services/mockWaterUsageData";
+import { Card, IconButton, List, SegmentedButtons, Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import RouteGuard from "../components/RouteGuard";
+import { Colors } from "../constants/theme";
+import { WaterUsageData, mockWaterUsageData } from "../services/mockWaterUsageData";
 
 type TimeFilter = "daily" | "weekly" | "monthly";
 
-export default function UsageHistoryScreen() {
+function UsageHistoryScreen() {
   const { deviceId } = useLocalSearchParams<{ deviceId?: string }>();
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [usageData, setUsageData] = useState<WaterUsageData[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("daily");
 
   // Fetch usage history
-  const fetchUsageHistory = async () => {
+  const fetchUsageHistory = useCallback(async () => {
     try {
       setLoading(true);
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -31,11 +34,10 @@ export default function UsageHistoryScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [deviceId]);
 
   const filterData = (data: WaterUsageData[]) => {
     const now = moment.utc();
-
     switch (timeFilter) {
       case "daily":
         return data.filter((usage) => moment.utc(usage.enqueuedAt).isSame(now, "day"));
@@ -50,7 +52,7 @@ export default function UsageHistoryScreen() {
 
   useEffect(() => {
     fetchUsageHistory();
-  }, []);
+  }, [fetchUsageHistory]);
 
   const renderItem: ListRenderItem<WaterUsageData> = ({ item: usage }) => (
     <Card style={styles.card}>
@@ -77,10 +79,19 @@ export default function UsageHistoryScreen() {
 
   const Header = (
     <View style={{ backgroundColor: Colors.offWhite, marginBottom: 16 }}>
-      <Text style={styles.title}>
-        Water Usage History
-        {deviceId ? ` (Device ${deviceId.replace("device-", "").padStart(3, "0")})` : ""}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8 }}>
+        <IconButton
+          icon="arrow-left"
+          size={28}
+          onPress={() => navigation.goBack()}
+          style={{ marginLeft: 4 }}
+          accessibilityLabel="Go back"
+        />
+        <Text style={styles.title}>
+          Water Usage History
+          {deviceId ? ` (Device ${deviceId.replace("device-", "").padStart(3, "0")})` : ""}
+        </Text>
+      </View>
       <SegmentedButtons
         value={timeFilter}
         onValueChange={(value) => setTimeFilter(value as TimeFilter)}
@@ -156,22 +167,24 @@ export default function UsageHistoryScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      {Header}
-      {loading ? (
-        <View style={{ marginTop: 16 }}>{renderSkeleton()}</View>
-      ) : (
-        <FlatList
-          data={filterData(usageData)}
-          renderItem={renderItem}
-          keyExtractor={(item, index) => `${item.enqueuedAt}-${index}`}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={true}
-          refreshing={loading}
-          onRefresh={fetchUsageHistory}
-        />
-      )}
-    </View>
+    <RouteGuard>
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+        {Header}
+        {loading ? (
+          <View style={{ marginTop: 16 }}>{renderSkeleton()}</View>
+        ) : (
+          <FlatList
+            data={filterData(usageData)}
+            renderItem={renderItem}
+            keyExtractor={(item, index) => `${item.enqueuedAt}-${index}`}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={true}
+            refreshing={loading}
+            onRefresh={fetchUsageHistory}
+          />
+        )}
+      </SafeAreaView>
+    </RouteGuard>
   );
 }
 
@@ -180,13 +193,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.paleCyan,
   },
-
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 16,
     paddingHorizontal: 16,
-    paddingTop: 16,
+    // paddingTop removed, handled by SafeAreaView and IconButton row
   },
   segmentedButtons: {
     marginBottom: 16,
@@ -212,3 +224,5 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
 });
+
+export default UsageHistoryScreen;
