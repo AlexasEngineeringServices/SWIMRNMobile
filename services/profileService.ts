@@ -1,4 +1,16 @@
 import { supabase } from "../lib/supabase";
+
+export const updateUserProfile = async (userId: string, firstname: string, lastname: string) => {
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ firstname, lastname })
+      .eq("id", userId);
+    return { error: error ? error.message : null };
+  } catch (e: any) {
+    return { error: e.message || "Failed to update profile." };
+  }
+};
 export const updateProfileVerificationStatus = async (userId: string) => {
   try {
     const { error } = await supabase
