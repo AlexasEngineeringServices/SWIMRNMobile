@@ -7,9 +7,9 @@ import { Button, HelperText, Text, TextInput } from "react-native-paper";
 import { z } from "zod";
 import { swimTheme } from "../hooks/useCustomTheme";
 import {
-  deletePasswordResetToken,
-  updatePasswordUser,
-  validatePasswordResetToken,
+    deletePasswordResetToken,
+    updatePasswordUser,
+    validatePasswordResetToken,
 } from "../services/passwordResetService";
 
 const resetPasswordSchema = z
@@ -34,6 +34,9 @@ export default function ResetPassword() {
   const params = useLocalSearchParams();
   const token = params.token as string;
   const email = params.email as string;
+
+  // Note: This page is intentionally available on web for password reset links
+  // Users receive reset links via email and need to access them from any device
 
   const {
     control,

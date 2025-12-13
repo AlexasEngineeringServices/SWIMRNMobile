@@ -1,10 +1,10 @@
 import { create } from "zustand";
-import { WaterUsageData } from "../services/mockWaterUsageData";
+import { AzureData } from "../services/azureDataService";
 
 interface WaterUsageState {
-  usageHistory: WaterUsageData[];
-  setUsageHistory: (data: WaterUsageData[]) => void;
-  getDeviceReadings: (deviceId: string) => WaterUsageData[];
+  usageHistory: AzureData[];
+  setUsageHistory: (data: AzureData[]) => void;
+  getDeviceReadings: (deviceId: string) => AzureData[];
 }
 
 export const useWaterUsageStore = create<WaterUsageState>((set, get) => ({

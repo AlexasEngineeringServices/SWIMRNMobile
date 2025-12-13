@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from "react";
 import {
-  Animated,
-  Dimensions,
-  GestureResponderEvent,
-  PanResponder,
-  PanResponderGestureState,
+    Animated,
+    Dimensions,
+    GestureResponderEvent,
+    PanResponder,
+    PanResponderGestureState,
 } from "react-native";
 
 interface DeviceCardSwipeGestureProps {
@@ -26,19 +26,26 @@ const DeviceCardSwipeGesture = (props: DeviceCardSwipeGestureProps) => {
     // Reset position when component mounts or updates
     pan.setValue({ x: 0, y: 0 });
     fadeAnim.setValue(1);
-  }, []);
+  }, [fadeAnim, pan]);
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only start responder for mostly-horizontal gestures
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 5;
+      },
       onPanResponderTerminationRequest: () => false,
       onPanResponderMove: (evt, gestureState) => {
-        // Only allow horizontal movement
-        pan.setValue({ x: gestureState.dx, y: 0 });
+        // Only allow horizontal movement. If left swipes are not allowed, ignore negative dx.
+        let dx = gestureState.dx;
+        if (dx < 0 && props.allowDirection && !props.allowDirection.includes("left")) {
+          dx = 0;
+        }
+        pan.setValue({ x: dx, y: 0 });
 
-        // Fade out as the card is swiped
-        const opacity = Math.max(1 - Math.abs(gestureState.dx) / (SCREEN_WIDTH * 0.5), 0.5);
+        // Fade out as the card is swiped (use the effective dx)
+        const opacity = Math.max(1 - Math.abs(dx) / (SCREEN_WIDTH * 0.5), 0.5);
         fadeAnim.setValue(opacity);
       },
       onPanResponderRelease: (
@@ -46,6 +53,24 @@ const DeviceCardSwipeGesture = (props: DeviceCardSwipeGestureProps) => {
         gestureState: PanResponderGestureState
       ) => {
         const x = gestureState.dx;
+
+        // If left swipes are disallowed and the final dx is negative, just snap back.
+        if (x < 0 && props.allowDirection && !props.allowDirection.includes("left")) {
+          Animated.parallel([
+            Animated.spring(pan, {
+              toValue: { x: 0, y: 0 },
+              friction: 5,
+              useNativeDriver: false,
+            }),
+            Animated.spring(fadeAnim, {
+              toValue: 1,
+              friction: 5,
+              useNativeDriver: false,
+            }),
+          ]).start();
+          return;
+        }
+
         if (Math.abs(x) >= SWIPE_THRESHOLD) {
           // Swipe exceeded threshold
           const direction = x > 0 ? "right" : "left";

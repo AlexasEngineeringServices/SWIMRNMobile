@@ -5,15 +5,15 @@ import { Button } from "react-native-paper";
 import { FONT_SIZES } from "../constants/theme";
 import { swimTheme } from "../hooks/useCustomTheme";
 import {
-  checkExistingVerificationToken,
-  deleteEmailVerificationToken,
-  sendVerificationEmail,
-  validateEmailVerificationToken,
+    checkExistingVerificationToken,
+    deleteEmailVerificationToken,
+    sendVerificationEmail,
+    validateEmailVerificationToken,
 } from "../services/emailService";
 import {
-  getProfileById,
-  getProfileVerificationStatus,
-  updateProfileVerificationStatus,
+    getProfileById,
+    getProfileVerificationStatus,
+    updateProfileVerificationStatus,
 } from "../services/profileService";
 
 export default function VerifyEmail() {
@@ -21,6 +21,9 @@ export default function VerifyEmail() {
   const token = Array.isArray(params.token) ? params.token[0] : params.token;
   const email = Array.isArray(params.email) ? params.email[0] : params.email;
   const router = useRouter();
+
+  // Note: This page is intentionally available on web for email verification links
+  // Users receive verification links via email and need to access them from any device
 
   const [verifying, setVerifying] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

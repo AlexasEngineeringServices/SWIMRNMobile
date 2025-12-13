@@ -4,11 +4,11 @@ import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { swimTheme } from "../hooks/useCustomTheme";
-import { WaterUsageData } from "../services/mockWaterUsageData";
+import { AzureData } from "../services/azureDataService";
 import DeviceCardSwipeGesture from "./DeviceCardSwipeGesture";
 
 interface DashboardDeviceCardProps {
-  data: WaterUsageData;
+  data: AzureData;
   isToday: boolean;
   onSwipe: () => void;
 }
@@ -31,7 +31,7 @@ export const DashboardDeviceCard: React.FC<DashboardDeviceCardProps> = ({
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [hintOpacity]);
 
   const handleSwipe = (direction: string) => {
     if (direction === "left" || direction === "right") {

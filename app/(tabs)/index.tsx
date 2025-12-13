@@ -1,86 +1,34 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import moment from "moment";
 import React, { useEffect } from "react";
 import { Platform, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Dialog, Portal, Text } from "react-native-paper";
-import Svg, { Circle } from "react-native-svg";
-import { DashboardDeviceCard } from "../../components/DashboardDeviceCard";
+import { useAllDeviceCards } from "../../hooks/useAllDeviceCards";
 import { swimTheme } from "../../hooks/useCustomTheme";
-import { mockWaterUsageData, WaterUsageData } from "../../services/mockWaterUsageData";
+import { AzureData, fetchAzureData } from "../../services/azureDataService";
 import { useAuthStore } from "../../store/authStore";
-import { useWaterUsageStore } from "../../store/waterUsageStore";
+import DeviceCardContainer from "./DeviceCardContainer";
 
 export default function HomeScreen() {
   const { user, loading: authLoading } = useAuthStore();
   const deviceId = user?.device_number || "";
 
-  const { setUsageHistory, getDeviceReadings } = useWaterUsageStore();
+  const [allDeviceData, setAllDeviceData] = React.useState<AzureData[]>([]);
 
   useEffect(() => {
-    setUsageHistory(mockWaterUsageData);
-  }, [setUsageHistory]);
+    async function fetchData() {
+      // Fetch all device data for device cards
+      const allData = await fetchAzureData();
+      setAllDeviceData(allData);
+    }
+    fetchData();
+  }, [deviceId]);
 
-  // Filter readings for the current device
-  // Try store first, fall back to mock data when store is empty or deviceId is missing
-  const deviceReadingsFromStore = getDeviceReadings(deviceId);
-  const fallbackDeviceId = deviceId || mockWaterUsageData[0]?.azureDeviceId;
-  const deviceReadings =
-    deviceReadingsFromStore && deviceReadingsFromStore.length > 0
-      ? deviceReadingsFromStore
-      : mockWaterUsageData.filter((d) => d.azureDeviceId === fallbackDeviceId);
+  // Use custom hook for all device cards
+  const deviceCards = useAllDeviceCards(allDeviceData);
 
-  // Get current readings (today) and last readings (most recent past date)
-  const today = moment.utc();
-  deviceReadings.forEach((entry) => {
-    const entryDate = moment.utc(entry.enqueuedAt);
-    const isToday = entryDate.isSame(today, "day");
-    console.log(
-      "enqueuedAt:",
-      entry.enqueuedAt,
-      "| UTC:",
-      entryDate.format("YYYY-MM-DD HH:mm:ss"),
-      "| isToday:",
-      isToday
-    );
-  });
+  console.log("Device Cards:", deviceCards);
 
-  // Get all unique dates from readings, sorted in descending order
-  const uniqueDates = [
-    ...new Set(deviceReadings.map((entry) => moment.utc(entry.enqueuedAt).format("YYYY-MM-DD"))),
-  ]
-    .sort()
-    .reverse();
-
-  // Get today's readings
-  const currentReadings = deviceReadings.filter((entry: WaterUsageData) =>
-    moment.utc(entry.enqueuedAt).isSame(today, "day")
-  );
-
-  // Sum of current readings (only today's readings)
-  const currentSum = currentReadings.reduce((sum, entry) => sum + entry.roundCount, 0);
-
-  // Get the last reading date (excluding today)
-  const lastReadingDate = uniqueDates.find((date) => !moment.utc(date).isSame(today, "day"));
-
-  // Get last readings from the last date and find the latest one based on enqueuedAt
-  const lastReadings = deviceReadings
-    .filter(
-      (entry: WaterUsageData) =>
-        moment.utc(entry.enqueuedAt).format("YYYY-MM-DD") === lastReadingDate
-    )
-    .sort((a, b) => moment.utc(b.enqueuedAt).valueOf() - moment.utc(a.enqueuedAt).valueOf());
-
-  // Get only the latest reading
-  const latestReading = lastReadings[0];
-
-  // Use only today's sum for the increment display
-  const dailyIncrement = currentSum;
-
-  // Circular progress value for Increment (normalized between 0 and 1)
-  const incrementPercent = Math.max(0, Math.min(1, dailyIncrement / 10));
-
-  const router = useRouter();
+  
   const [showInstructions, setShowInstructions] = React.useState(true);
 
   const loading = authLoading;
@@ -97,111 +45,15 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <View style={styles.titleSection}>
-            <Text style={styles.titleText}>Daily Water Consumption</Text>
-          </View>
-        </View>
-
-        {/* Daily Water Consumption Card */}
-        <View style={styles.chartContainerCard}>
-          {/* Modern Circular Progress for Increment with value labels */}
-          <View
-            style={{
-              alignItems: "center",
-              marginVertical: 16,
-              justifyContent: "center",
-            }}
-          >
-            <View style={styles.chartWrapper}>
-              <Svg width={220} height={220} style={{ transform: [{ rotate: "-90deg" }] }}>
-                <Circle
-                  cx={110}
-                  cy={110}
-                  r={90}
-                  stroke={swimTheme.colors.border}
-                  strokeWidth={20}
-                  fill="transparent"
-                />
-                <Circle
-                  cx={110}
-                  cy={110}
-                  r={90}
-                  stroke={swimTheme.colors.primary}
-                  strokeWidth={20}
-                  fill="transparent"
-                  strokeDasharray={`${2 * Math.PI * 90}`}
-                  strokeDashoffset={2 * Math.PI * 90 * (1 - incrementPercent)}
-                />
-              </Svg>
-              <View style={styles.chartCenter}>
-                <Text style={styles.chartValue}>{currentSum}L</Text>
-                <Text style={styles.chartLabel}>Today&apos;s Usage</Text>
-              </View>
-            </View>
-            <View style={styles.statsCard}>
-              <Text style={styles.statsText}>
-                <Text style={{ color: swimTheme.colors.border }}>Last Reading:</Text>{" "}
-                <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
-                  {latestReading ? latestReading.roundCount : 0}L
-                </Text>
-              </Text>
-              <Text
-                style={{
-                  color: swimTheme.colors.text,
-                  fontSize: 20,
-                  fontWeight: "500",
-                  marginBottom: 12,
-                }}
-              >
-                <Text style={{ color: swimTheme.colors.border }}>Current Reading:</Text>{" "}
-                <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
-                  {currentSum}L
-                </Text>
-              </Text>
-              <Text style={styles.statsText}>
-                <Text style={{ color: swimTheme.colors.border }}>Today&apos;s Total:</Text>{" "}
-                <Text style={{ color: swimTheme.colors.primary, fontWeight: "bold" }}>
-                  {currentSum}L
-                </Text>
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.header}>
-          <View style={styles.titleSection}>
             <Text style={styles.titleText}>Devices Readings</Text>
           </View>
         </View>
 
         {/* Device Information Card */}
         <View style={styles.devicesContainerCard}>
-          {Array.from(new Set(mockWaterUsageData.map((d) => d.azureDeviceId))).map((deviceId) => {
-            // Get all readings for this device
-            const readings = mockWaterUsageData.filter((d) => d.azureDeviceId === deviceId);
-            // Get latest reading
-            const latest = readings.reduce((prev, curr) =>
-              moment.utc(curr.enqueuedAt).isAfter(moment.utc(prev.enqueuedAt)) ? curr : prev
-            );
-            // Check if latest reading is from today
-            const isToday = moment.utc(latest.enqueuedAt).isSame(today, "day");
-
-            // Handler for swipe gesture
-            const handleSwipe = () => {
-              router.push({
-                pathname: "../usage-history",
-                params: { deviceId },
-              });
-            };
-
-            return (
-              <DashboardDeviceCard
-                key={deviceId}
-                data={latest}
-                isToday={isToday}
-                onSwipe={handleSwipe}
-              />
-            );
-          })}
+          {deviceCards.map(({ deviceId, readings }) => (
+            <DeviceCardContainer key={deviceId} deviceId={deviceId} readings={readings} />
+          ))}
         </View>
       </ScrollView>
 
@@ -211,14 +63,10 @@ export default function HomeScreen() {
         <Dialog visible={showInstructions} onDismiss={() => setShowInstructions(false)}>
           <Dialog.Content>
             <View style={styles.instructionContent}>
-              <MaterialCommunityIcons
-                name="gesture-swipe-horizontal"
-                size={40}
-                color={swimTheme.colors.primary}
-              />
+              <MaterialCommunityIcons name="gesture-swipe-right" size={40} color={swimTheme.colors.primary} />
               <Text style={styles.instructionTitle}>Quick Tip</Text>
               <Text style={styles.instructionText}>
-                Swipe any device card left or right to view its detailed usage history
+                Swipe any device card right to view its detailed usage history
               </Text>
             </View>
           </Dialog.Content>
@@ -418,12 +266,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
+    color: swimTheme.colors.primary,
   },
   titleText: {
-    color: swimTheme.colors.text,
-    ...swimTheme.fonts.bold,
-    fontSize: 24,
-    flexShrink: 1,
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 16,
+    color: swimTheme.colors.primary,
+    alignSelf: "center",
+    textAlign: "center",
   },
   nameText: {
     color: swimTheme.colors.text,

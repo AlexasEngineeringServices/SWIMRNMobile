@@ -4,18 +4,18 @@ import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { swimTheme } from "../hooks/useCustomTheme";
-import { WaterUsageData } from "../services/mockWaterUsageData";
+import { AzureData } from "../services/azureDataService";
 import SwipeGesture from "./DeviceCardSwipeGesture";
 
 interface DashboardDeviceCardProps {
-  data: WaterUsageData;
-  isToday: boolean;
+  data: AzureData;
+  isLatest: boolean;
   onSwipe: () => void;
 }
 
 export const DashboardDeviceCard: React.FC<DashboardDeviceCardProps> = ({
   data,
-  isToday,
+  isLatest,
   onSwipe,
 }) => {
   const hintOpacity = useRef(new Animated.Value(1)).current;
@@ -31,16 +31,16 @@ export const DashboardDeviceCard: React.FC<DashboardDeviceCardProps> = ({
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [hintOpacity]);
 
   const handleSwipe = (direction: string) => {
-    if (direction === "left" || direction === "right") {
+    if (direction === "right") {
       onSwipe();
     }
   };
 
   return (
-    <SwipeGesture onSwipePerformed={handleSwipe} gestureStyle={styles.gestureContainer}>
+    <SwipeGesture onSwipePerformed={handleSwipe} gestureStyle={styles.gestureContainer} allowDirection={["right"]}>
       <View style={styles.deviceCard}>
         <View style={styles.deviceHeader}>
           <Text style={styles.deviceTitle}>
@@ -52,13 +52,13 @@ export const DashboardDeviceCard: React.FC<DashboardDeviceCardProps> = ({
               size={20}
               color={swimTheme.colors.border}
             />
-            <Text style={styles.swipeHintText}>Swipe to view history</Text>
+            <Text style={styles.swipeHintText}>Swipe right to view history</Text>
           </Animated.View>
         </View>
         <Text style={styles.dateText}>
           Latest (UTC): {moment.utc(data.enqueuedAt).format("YYYY-MM-DD HH:mm:ss")}
         </Text>
-        {!isToday && <Text style={styles.notToday}>Not today</Text>}
+        {!isLatest && <Text style={styles.notToday}>Not latest</Text>}
         <View style={styles.metricsContainer}>
           <View style={styles.metricsRow}>
             <View style={styles.metricBox}>

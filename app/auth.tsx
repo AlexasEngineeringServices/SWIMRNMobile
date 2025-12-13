@@ -39,6 +39,28 @@ const Auth = () => {
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const { initialize } = useAuthStore();
+
+  // Block web access for authentication
+  if (Platform.OS === "web") {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: swimTheme.colors.background }}>
+        <View style={styles.container}>
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+            <Text style={{ fontSize: 24, fontWeight: "bold", color: swimTheme.colors.text, marginBottom: 16, textAlign: "center" }}>
+              Web Access Not Available
+            </Text>
+            <Text style={{ fontSize: 16, color: swimTheme.colors.border, textAlign: "center", marginBottom: 24 }}>
+              Authentication is only available through the mobile app.
+            </Text>
+            <Text style={{ fontSize: 14, color: swimTheme.colors.border, textAlign: "center" }}>
+              Please download the SWIM App to sign in or create an account.
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleForgotPassword = async () => {
     if (!forgotEmail) {
@@ -121,8 +143,6 @@ const Auth = () => {
 
     setLoading(false);
   };
-
-  const { initialize } = useAuthStore();
 
   const handleSignIn = async (data: LoginData) => {
     setLoading(true);
