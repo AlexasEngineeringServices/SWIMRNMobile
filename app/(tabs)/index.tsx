@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { Platform, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Linking, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Button, Dialog, Portal, Text } from "react-native-paper";
 import { useAllDeviceCards } from "../../hooks/useAllDeviceCards";
 import { swimTheme } from "../../hooks/useCustomTheme";
@@ -33,6 +33,22 @@ export default function HomeScreen() {
 
   const loading = authLoading;
 
+  const handleShareDashboard = async () => {
+    const appUrl = process.env.EXPO_PUBLIC_APP_URL || "http://localhost:8081";
+    const shareUrl = `${appUrl}/shared-dashboard`;
+    try {
+      const canOpen = await Linking.canOpenURL(shareUrl);
+      if (canOpen) {
+        await Linking.openURL(shareUrl);
+      } else {
+        Alert.alert("Error", "Cannot open the shared dashboard URL");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to open shared dashboard");
+      console.error("Error opening URL:", error);
+    }
+  };
+
   if (loading) return null;
 
   return (
@@ -46,6 +62,9 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.titleSection}>
             <Text style={styles.titleText}>Devices Readings</Text>
+            <TouchableOpacity onPress={handleShareDashboard} style={styles.shareButton}>
+              <MaterialCommunityIcons name="share-variant" size={28} color={swimTheme.colors.primary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -265,16 +284,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     flexDirection: "row",
     alignItems: "center",
-    flexWrap: "wrap",
-    color: swimTheme.colors.primary,
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
   },
   titleText: {
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 16,
     color: swimTheme.colors.primary,
-    alignSelf: "center",
+    flex: 1,
     textAlign: "center",
+  },
+  shareButton: {
+    padding: 8,
+    marginBottom: 16,
   },
   nameText: {
     color: swimTheme.colors.text,

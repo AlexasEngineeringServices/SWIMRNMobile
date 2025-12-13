@@ -16,15 +16,18 @@ export interface DeviceReadingsStats {
 export function useDeviceReadings(deviceReadings: AzureData[]): DeviceReadingsStats {
   const today = moment.utc();
 
+  // Safety check: ensure deviceReadings is an array
+  const safeReadings = Array.isArray(deviceReadings) ? deviceReadings : [];
+
   // Get all unique dates from readings, sorted in descending order
   const uniqueDates = [
-    ...new Set(deviceReadings.map((entry) => moment.utc(entry.enqueuedAt).format("YYYY-MM-DD"))),
+    ...new Set(safeReadings.map((entry) => moment.utc(entry.enqueuedAt).format("YYYY-MM-DD"))),
   ]
     .sort()
     .reverse();
 
   // Get today's readings
-  const currentReadings = deviceReadings.filter((entry: AzureData) =>
+  const currentReadings = safeReadings.filter((entry: AzureData) =>
     moment.utc(entry.enqueuedAt).isSame(today, "day")
   );
 
@@ -35,7 +38,7 @@ export function useDeviceReadings(deviceReadings: AzureData[]): DeviceReadingsSt
   const lastReadingDate = uniqueDates.find((date) => !moment.utc(date).isSame(today, "day"));
 
   // Get last readings from the last date and find the latest one based on enqueuedAt
-  const lastReadings = deviceReadings
+  const lastReadings = safeReadings
     .filter(
       (entry: AzureData) =>
         moment.utc(entry.enqueuedAt).format("YYYY-MM-DD") === lastReadingDate
