@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "lint-staged": "npx lint-staged",
-    "prepare": "husky"
+    "prepare": "husky",
+    "vercel-build": "expo export"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
