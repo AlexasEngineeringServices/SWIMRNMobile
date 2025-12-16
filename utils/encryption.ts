@@ -10,7 +10,7 @@ import { signJWT, verifyJWT } from "./jwt";
  * Gets the web secret key from environment
  */
 function getWebSecretKey(): string {
-  return process.env.EXPO_PUBLIC_WEB_SECRET_KEY || "SwimWebSuperSecretKey12345@SwimWebSuperSecretKey67890";
+  return process.env.EXPO_PUBLIC_WEB_SECRET_KEY || "";
 }
 
 /**
