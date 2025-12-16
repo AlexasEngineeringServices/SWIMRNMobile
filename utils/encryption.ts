@@ -10,7 +10,11 @@ import { signJWT, verifyJWT } from "./jwt";
  * Gets the web secret key from environment
  */
 function getWebSecretKey(): string {
-  return process.env.EXPO_PUBLIC_WEB_SECRET_KEY || "";
+  const key = process.env.EXPO_PUBLIC_WEB_SECRET_KEY;
+  if (!key) {
+    throw new Error("EXPO_PUBLIC_WEB_SECRET_KEY is not set. Please add it to your .env file for secure JWT signing.");
+  }
+  return key;
 }
 
 /**
