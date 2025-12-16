@@ -16,12 +16,14 @@ export default function HomeScreen() {
 
   useEffect(() => {
     async function fetchData() {
-      // Fetch all device data for device cards
-      const allData = await fetchAzureData();
-      setAllDeviceData(allData);
+      // Fetch device data filtered by current user's ID
+      if (user?.id) {
+        const allData = await fetchAzureData(undefined, user.id);
+        setAllDeviceData(allData);
+      }
     }
     fetchData();
-  }, [deviceId]);
+  }, [deviceId, user?.id]);
 
   // Use custom hook for all device cards
   const deviceCards = useAllDeviceCards(allDeviceData);
@@ -33,10 +35,23 @@ export default function HomeScreen() {
 
   const loading = authLoading;
 
+  const [shareLoading, setShareLoading] = React.useState(false);
+
   const handleShareDashboard = async () => {
-    const appUrl = process.env.EXPO_PUBLIC_APP_URL || "http://localhost:8081";
-    const shareUrl = `${appUrl}/shared-dashboard`;
+    if (!user?.id) {
+      Alert.alert("Error", "User not authenticated");
+      return;
+    }
+    setShareLoading(true);
     try {
+      const appUrl = process.env.EXPO_PUBLIC_APP_URL || "http://localhost:8081";
+      // Always generate a new encrypted slug on each share
+      const { encryptUserId } = await import("../../utils/encryption");
+      const slug = await encryptUserId(user.id);
+      if (!slug) {
+        throw new Error("Failed to generate shareable link");
+      }
+      const shareUrl = `${appUrl}/shared-dashboard/${slug}`;
       const canOpen = await Linking.canOpenURL(shareUrl);
       if (canOpen) {
         await Linking.openURL(shareUrl);
@@ -46,6 +61,8 @@ export default function HomeScreen() {
     } catch (error) {
       Alert.alert("Error", "Failed to open shared dashboard");
       console.error("Error opening URL:", error);
+    } finally {
+      setShareLoading(false);
     }
   };
 
@@ -62,8 +79,16 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.titleSection}>
             <Text style={styles.titleText}>Devices Readings</Text>
-            <TouchableOpacity onPress={handleShareDashboard} style={styles.shareButton}>
-              <MaterialCommunityIcons name="share-variant" size={28} color={swimTheme.colors.primary} />
+            <TouchableOpacity
+              onPress={handleShareDashboard}
+              style={styles.shareButton}
+              disabled={shareLoading}
+            >
+              <MaterialCommunityIcons
+                name="share-variant"
+                size={28}
+                color={shareLoading ? swimTheme.colors.border : swimTheme.colors.primary}
+              />
             </TouchableOpacity>
           </View>
         </View>

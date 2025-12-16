@@ -8,11 +8,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import RouteGuard from "../components/RouteGuard";
 import { Colors } from "../constants/theme";
 import { AzureData, fetchAzureData } from "../services/azureDataService";
+import { useAuthStore } from "../store/authStore";
 
 type TimeFilter = "daily" | "weekly" | "monthly";
 
 function UsageHistoryScreen() {
   const { deviceId } = useLocalSearchParams<{ deviceId?: string }>();
+  const { user } = useAuthStore();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [usageData, setUsageData] = useState<AzureData[]>([]);
@@ -22,14 +24,15 @@ function UsageHistoryScreen() {
   const fetchUsageHistory = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await fetchAzureData(deviceId);
+      // Filter by device and user
+      const data = await fetchAzureData(deviceId, user?.id);
       setUsageData(data);
     } catch (error) {
       console.error("Error fetching usage history:", error);
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, user?.id]);
 
   const filterData = (data: AzureData[]) => {
     const now = moment.utc();

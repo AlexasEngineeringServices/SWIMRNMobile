@@ -6,14 +6,16 @@ import { Card, IconButton, List, SegmentedButtons } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
 import { AzureData, fetchAzureData } from "../services/azureDataService";
+import { decryptUserId } from "../utils/encryption";
 
 type TimeFilter = "daily" | "weekly" | "monthly";
 
 function SharedUsageHistory() {
-  const { deviceId } = useLocalSearchParams<{ deviceId?: string }>();
+  const { deviceId, userId: encryptedUserId } = useLocalSearchParams<{ deviceId?: string; userId?: string }>();
   const [loading, setLoading] = useState(true);
   const [usageData, setUsageData] = useState<AzureData[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("daily");
+  const [error, setError] = useState<string | null>(null);
 
   // Only show on web
   useEffect(() => {
@@ -26,14 +28,28 @@ function SharedUsageHistory() {
   const fetchUsageHistory = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await fetchAzureData(deviceId);
+      setError(null);
+      
+      // Decrypt user ID from URL parameter (now async)
+      const userId = encryptedUserId ? await decryptUserId(encryptedUserId) : null;
+      
+      if (!userId) {
+        // Show a specific message if the JWT is expired
+        setError("This link has expired. For your security, shared links are only valid for 7 days. Please request a new link from the owner.");
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch data filtered by device and user
+      const data = await fetchAzureData(deviceId, userId);
       setUsageData(data);
     } catch (error) {
       console.error("Error fetching usage history:", error);
+      setError("Failed to load usage history");
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, encryptedUserId]);
 
   const filterData = (data: AzureData[]) => {
     const now = moment.utc();
@@ -189,6 +205,17 @@ function SharedUsageHistory() {
     );
   }
 
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorSubtext}>Please check your link and try again.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       {Header}
@@ -260,6 +287,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: Colors.charcoal,
     textAlign: "center",
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: Colors.charcoal,
+    textAlign: "center",
+    opacity: 0.7,
   },
 });
 

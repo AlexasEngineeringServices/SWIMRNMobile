@@ -1,16 +1,20 @@
+import SharedDeviceCardContainer from "@/components/SharedDeviceCardContainer";
+import { useAllDeviceCards } from "@/hooks/useAllDeviceCards";
+import { swimTheme } from "@/hooks/useCustomTheme";
+import { AzureData, fetchAzureData } from "@/services/azureDataService";
+import { decryptUserId } from "@/utils/encryption";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
 import React, { useEffect } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button, Dialog, Portal } from "react-native-paper";
-import SharedDeviceCardContainer from "../components/SharedDeviceCardContainer";
-import { useAllDeviceCards } from "../hooks/useAllDeviceCards";
-import { swimTheme } from "../hooks/useCustomTheme";
-import { AzureData, fetchAzureData } from "../services/azureDataService";
 
 export default function SharedDashboard() {
+  const params = useLocalSearchParams<{ slug?: string }>();
   const [allDeviceData, setAllDeviceData] = React.useState<AzureData[]>([]);
   const [showInstructions, setShowInstructions] = React.useState(true);
   const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
   // Redirect if not on web
   useEffect(() => {
@@ -24,11 +28,25 @@ export default function SharedDashboard() {
     async function fetchData() {
       try {
         setLoading(true);
-        // Fetch all device data for device cards (no authentication required)
-        const allData = await fetchAzureData();
+        setError(null);
+        
+        // Decrypt user ID from URL slug (now async)
+        const encryptedSlug = params.slug || "";
+        const userId = await decryptUserId(encryptedSlug);
+        
+        if (!userId) {
+          // Show a specific message if the JWT is expired
+          setError("This link has expired. For your security, shared links are only valid for 7 days. Please request a new link from the owner.");
+          setLoading(false);
+          return;
+        }
+        
+        // Fetch device data filtered by user ID
+        const allData = await fetchAzureData(undefined, userId);
         setAllDeviceData(allData);
       } catch (error) {
         console.error("Error fetching device data:", error);
+        setError("Failed to load device data");
       } finally {
         setLoading(false);
       }
@@ -37,7 +55,7 @@ export default function SharedDashboard() {
     if (Platform.OS === "web") {
       fetchData();
     }
-  }, []);
+  }, [params.slug]);
 
   // Use custom hook for all device cards
   const deviceCards = useAllDeviceCards(allDeviceData);
@@ -58,6 +76,17 @@ export default function SharedDashboard() {
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading device data...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorSubtext}>Please check your link and try again.</Text>
         </View>
       </View>
     );
@@ -234,6 +263,12 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     color: swimTheme.colors.text,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: swimTheme.colors.border,
     textAlign: "center",
   },
   emptyContainer: {

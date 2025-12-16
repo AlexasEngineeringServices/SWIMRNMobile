@@ -2,23 +2,29 @@
  * Helper functions for generating shareable dashboard links
  */
 
+import { encryptUserId } from './encryption';
+
 /**
  * Generates a shareable link to the public dashboard
  * @param baseUrl - The base URL of your deployed web app (e.g., "https://your-domain.com")
- * @returns Full URL to the shared dashboard
+ * @param userId - The user ID to encrypt in the URL
+ * @returns Full URL to the shared dashboard with encrypted user ID
  */
-export function generateSharedDashboardLink(baseUrl: string): string {
-  return `${baseUrl}/shared-dashboard`;
+export function generateSharedDashboardLink(baseUrl: string, userId: string): string {
+  const encryptedUserId = encryptUserId(userId);
+  return `${baseUrl}/shared-dashboard/${encryptedUserId}`;
 }
 
 /**
  * Generates a shareable link to a specific device's usage history
  * @param baseUrl - The base URL of your deployed web app (e.g., "https://your-domain.com")
  * @param deviceId - The device ID (e.g., "device-001")
- * @returns Full URL to the shared usage history for that device
+ * @param userId - The user ID to encrypt in the URL
+ * @returns Full URL to the shared usage history for that device with encrypted user ID
  */
-export function generateSharedDeviceHistoryLink(baseUrl: string, deviceId: string): string {
-  return `${baseUrl}/shared-usage-history?deviceId=${encodeURIComponent(deviceId)}`;
+export function generateSharedDeviceHistoryLink(baseUrl: string, deviceId: string, userId: string): string {
+  const encryptedUserId = encryptUserId(userId);
+  return `${baseUrl}/shared-usage-history?deviceId=${encodeURIComponent(deviceId)}&userId=${encryptedUserId}`;
 }
 
 /**

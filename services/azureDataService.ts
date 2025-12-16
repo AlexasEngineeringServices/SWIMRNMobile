@@ -12,14 +12,22 @@ export interface AzureData {
   createdAt: string;
 }
 
-export async function fetchAzureData(deviceId?: string): Promise<AzureData[]> {
+export async function fetchAzureData(deviceId?: string, userId?: string): Promise<AzureData[]> {
   let query = supabase
     .from("azure_data_test")
     .select("id, user_id, round_count, slim_count, round_void_count, slim_void_count, enqueued_at, azure_device_id, created_at")
     .order("enqueued_at", { ascending: false });
+  
+  // Filter by user_id if provided
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+  
+  // Filter by device_id if provided
   if (deviceId) {
     query = query.eq("azure_device_id", deviceId);
   }
+  
   const { data, error } = await query;
   if (error) {
     console.error("Error fetching Azure data:", error);
