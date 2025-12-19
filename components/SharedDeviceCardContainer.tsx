@@ -13,19 +13,19 @@ const SharedDeviceCardContainer: React.FC<SharedDeviceCardContainerProps> = ({
   deviceId,
   readings,
 }) => {
-  const params = useLocalSearchParams<{ slug?: string }>();
+  const params = useLocalSearchParams<{ token?: string }>();
   const stats = useDeviceReadings(readings);
   const latestReading = stats.latestReading;
   const isLatest = !!latestReading;
   const router = useRouter();
 
   const handleSwipe = () => {
-    // Pass the encrypted user ID slug from the URL to the usage history page
+    // Pass the encrypted user ID token from the URL to the usage history page
     router.push({
       pathname: "/shared-usage-history",
       params: { 
         deviceId,
-        userId: params.slug // Pass the encrypted slug as userId
+        userId: params.token // Pass the encrypted token as userId
       },
     });
   };

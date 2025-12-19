@@ -10,8 +10,8 @@ import { encryptUserId } from './encryption';
  * @param userId - The user ID to encrypt in the URL
  * @returns Full URL to the shared dashboard with encrypted user ID
  */
-export function generateSharedDashboardLink(baseUrl: string, userId: string): string {
-  const encryptedUserId = encryptUserId(userId);
+export async function generateSharedDashboardLink(baseUrl: string, userId: string): Promise<string> {
+  const encryptedUserId = await encryptUserId(userId);
   return `${baseUrl}/shared-dashboard?token=${encryptedUserId}`;
 }
 
@@ -22,8 +22,8 @@ export function generateSharedDashboardLink(baseUrl: string, userId: string): st
  * @param userId - The user ID to encrypt in the URL
  * @returns Full URL to the shared usage history for that device with encrypted user ID
  */
-export function generateSharedDeviceHistoryLink(baseUrl: string, deviceId: string, userId: string): string {
-  const encryptedUserId = encryptUserId(userId);
+export async function generateSharedDeviceHistoryLink(baseUrl: string, deviceId: string, userId: string): Promise<string> {
+  const encryptedUserId = await encryptUserId(userId);
   return `${baseUrl}/shared-usage-history?deviceId=${encodeURIComponent(deviceId)}&userId=${encryptedUserId}`;
 }
 
