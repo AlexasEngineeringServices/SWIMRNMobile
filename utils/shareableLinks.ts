@@ -12,7 +12,7 @@ import { encryptUserId } from './encryption';
  */
 export function generateSharedDashboardLink(baseUrl: string, userId: string): string {
   const encryptedUserId = encryptUserId(userId);
-  return `${baseUrl}/shared-dashboard/${encryptedUserId}`;
+  return `${baseUrl}/shared-dashboard?token=${encryptedUserId}`;
 }
 
 /**
@@ -55,18 +55,8 @@ export function getShareableBaseUrl(): string {
     return window.location.origin;
   }
   
-  // Default values for different environments
-  // Update these with your actual deployment URLs
-  const isDevelopment = process.env.NODE_ENV === "development";
-  const isStaging = process.env.EXPO_PUBLIC_ENV === "staging";
-  
-  if (isDevelopment) {
-    return "http://localhost:8081"; // or your local web dev server port
-  } else if (isStaging) {
-    return "https://staging.your-domain.com"; // Update with your staging URL
-  } else {
-    return "https://your-domain.com"; // Update with your production URL
-  }
+  // Use the environment variable for the app URL
+  return process.env.EXPO_PUBLIC_APP_URL || "http://localhost:8081";
 }
 
 /**

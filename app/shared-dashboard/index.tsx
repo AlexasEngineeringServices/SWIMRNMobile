@@ -10,7 +10,7 @@ import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button, Dialog, Portal } from "react-native-paper";
 
 export default function SharedDashboard() {
-  const params = useLocalSearchParams<{ slug?: string }>();
+  const params = useLocalSearchParams<{ token?: string }>();
   const [allDeviceData, setAllDeviceData] = React.useState<AzureData[]>([]);
   const [showInstructions, setShowInstructions] = React.useState(true);
   const [loading, setLoading] = React.useState(true);
@@ -30,9 +30,9 @@ export default function SharedDashboard() {
         setLoading(true);
         setError(null);
         
-        // Decrypt user ID from URL slug (now async)
-        const encryptedSlug = params.slug || "";
-        const userId = await decryptUserId(encryptedSlug);
+        // Decrypt user ID from URL token parameter (now async)
+        const encryptedToken = params.token || "";
+        const userId = await decryptUserId(encryptedToken);
         
         if (!userId) {
           // Show a specific message if the JWT is expired
@@ -55,7 +55,7 @@ export default function SharedDashboard() {
     if (Platform.OS === "web") {
       fetchData();
     }
-  }, [params.slug]);
+  }, [params.token]);
 
   // Use custom hook for all device cards
   const deviceCards = useAllDeviceCards(allDeviceData);

@@ -2,19 +2,22 @@
 
 ## Overview
 
-This feature provides a public, web-only dashboard that allows non-authenticated users to view device readings and usage history through a shareable link.
+This feature provides a public, web-only dashboard that allows non-authenticated users to view device readings and usage history through a secure, time-limited shareable link. The link contains an encrypted JWT token that identifies the user's devices and expires after 7 days for security.
 
 ## Files Created
 
-### 1. `/app/shared-dashboard.tsx`
+### 1. `/app/shared-dashboard/index.tsx`
 
 - **Purpose**: Public dashboard for viewing all device readings
 - **Access**: Web only, no authentication required
+- **URL Format**: `/shared-dashboard?token={encrypted-jwt-token}`
 - **Features**:
-  - Displays all devices and their latest readings
+  - Decrypts JWT token to identify user and validate expiration
+  - Displays all devices belonging to the user
   - Shows device cards with swipe functionality
   - Includes instructional dialog for first-time users
   - "View Only" label to indicate public access
+  - Shows error message if link has expired (> 7 days)
 
 ### 2. `/app/shared-usage-history.tsx`
 
@@ -57,8 +60,8 @@ The following pages are **blocked from web access** and show a "Web Access Not A
 
 The following pages remain accessible on web:
 
-- `/shared-dashboard` - Public dashboard (main shareable link)
-- `/shared-usage-history` - Public usage history
+- `/shared-dashboard?token={jwt}` - Public dashboard (main shareable link with encrypted token)
+- `/shared-usage-history?deviceId={id}&userId={jwt}` - Public usage history
 - `/reset-password` - Password reset (from email links)
 - `/verify-email` - Email verification (from email links)
 
@@ -69,16 +72,19 @@ The following pages remain accessible on web:
 To share the dashboard with non-authenticated users:
 
 1. Deploy your app to web
-2. Share the URL: `https://your-domain.com/shared-dashboard`
-3. Users can view all device readings without signing in
-4. Users can swipe device cards right to see detailed history
+2. In the mobile app, tap the share icon on the main dashboard
+3. This generates a secure URL: `https://your-domain.com/shared-dashboard?token={encrypted-jwt}`
+4. Share this URL via email, SMS, or any messaging platform
+5. Recipients can view all your device readings without signing in
+6. Links expire after 7 days for security
+7. Users can swipe device cards right to see detailed history
 
 ### Navigation Flow
 
 ```
-/shared-dashboard
+/shared-dashboard?token={jwt}
   └─> (swipe device card right)
-      └─> /shared-usage-history?deviceId=device-XXX
+      └─> /shared-usage-history?deviceId=device-XXX&userId={jwt}
 ```
 
 ## Implementation Details
@@ -106,22 +112,40 @@ if (Platform.OS === 'web') {
 Both shared pages fetch data directly from Azure services:
 
 - No authentication required
-- Uses the same `fetchAzureData()` function
+- Uses JWT token to identify which user's devices to display
+- Uses the same `fetchAzureData()` function with user ID filter
 - Public read-only access to device readings
+- Token validation happens on client-side (JWT expiration check)
 
 ## Security Considerations
 
 - Shared dashboard provides **read-only** access
+- Uses JWT encryption with 7-day expiration
+- Links automatically expire after 7 days
+- Encrypted token prevents tampering with user IDs
 - No user authentication or session management
 - No ability to modify device settings or data
-- Suitable for public monitoring and transparency
+- Users can only see devices belonging to the token owner
+- Suitable for temporary monitoring and transparency
+
+### Security Implementation
+
+- **JWT Token**: Contains user ID encrypted with HS256 algorithm
+- **Expiration**: Tokens expire after 7 days (`exp` claim)
+- **Secret Key**: Uses `EXPO_PUBLIC_WEB_SECRET_KEY` from environment variables
+- **Validation**: Client-side JWT validation before fetching data
+- **Error Handling**: Shows user-friendly message when links expire
 
 ## Future Enhancements
 
 Possible improvements:
 
-- Add device-specific shareable links (e.g., `/shared-dashboard?device=001`)
-- Implement link expiration or access tokens
+- ✅ ~~Implement link expiration or access tokens~~ (Implemented with JWT)
+- Add device-specific shareable links with device filtering in token
+- Server-side token validation for enhanced security
 - Add analytics to track shared link views
+- Allow users to revoke/regenerate links
+- Customizable link expiration time (1 day, 7 days, 30 days)
 - Custom branding for shared views
 - Export data to CSV/PDF from shared view
+- Rate limiting to prevent abuse

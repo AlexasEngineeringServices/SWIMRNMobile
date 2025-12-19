@@ -51,7 +51,7 @@ export default function HomeScreen() {
       if (!slug) {
         throw new Error("Failed to generate shareable link");
       }
-      const shareUrl = `${appUrl}/shared-dashboard/${slug}`;
+      const shareUrl = `${appUrl}/shared-dashboard?token=${slug}`;
       const canOpen = await Linking.canOpenURL(shareUrl);
       if (canOpen) {
         await Linking.openURL(shareUrl);
