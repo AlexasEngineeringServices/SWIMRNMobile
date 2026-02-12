@@ -8,7 +8,7 @@ interface UserProfile {
   lastname?: string;
   email?: string;
   device_name?: string;
-  device_number?: string;
+  azure_device_id?: string;
   is_verified?: boolean;
   created_at?: string;
 }
@@ -39,7 +39,7 @@ export const useAuthStore = create<AuthState>((set) => {
     // Fetch device information
     const { data: device, error: deviceError } = await supabase
       .from("devices")
-      .select("device_name, device_number")
+      .select("device_name, azure_device_id")
       .eq("user_id", userId)
       .single();
 
@@ -52,7 +52,7 @@ export const useAuthStore = create<AuthState>((set) => {
     return {
       ...profile,
       device_name: device?.device_name || null,
-      device_number: device?.device_number || null,
+      azure_device_id: device?.azure_device_id || null,
     } as UserProfile;
   };
 

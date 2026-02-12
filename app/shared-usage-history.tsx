@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import moment from "moment";
 import React, { useCallback, useEffect, useState } from "react";
@@ -11,7 +12,10 @@ import { decryptUserId } from "../utils/encryption";
 type TimeFilter = "daily" | "weekly" | "monthly";
 
 function SharedUsageHistory() {
-  const { deviceId, userId: encryptedUserId } = useLocalSearchParams<{ deviceId?: string; userId?: string }>();
+  const { deviceId, userId: encryptedUserId } = useLocalSearchParams<{
+    deviceId?: string;
+    userId?: string;
+  }>();
   const [loading, setLoading] = useState(true);
   const [usageData, setUsageData] = useState<AzureData[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("daily");
@@ -29,17 +33,19 @@ function SharedUsageHistory() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Decrypt user ID from URL parameter (now async)
       const userId = encryptedUserId ? await decryptUserId(encryptedUserId) : null;
-      
+
       if (!userId) {
         // Show a specific message if the JWT is expired
-        setError("This link has expired. For your security, shared links are only valid for 7 days. Please request a new link from the owner.");
+        setError(
+          "This link has expired. For your security, shared links are only valid for 7 days. Please request a new link from the owner."
+        );
         setLoading(false);
         return;
       }
-      
+
       // Fetch data filtered by device and user
       const data = await fetchAzureData(deviceId, userId);
       setUsageData(data);
@@ -230,6 +236,20 @@ function SharedUsageHistory() {
           showsVerticalScrollIndicator={true}
           refreshing={loading}
           onRefresh={fetchUsageHistory}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons
+                name="water-off"
+                size={80}
+                color={Colors.mistGray}
+                style={styles.emptyIcon}
+              />
+              <Text style={styles.emptyTitle}>No Usage Data</Text>
+              <Text style={styles.emptyText}>
+                No usage history found for the selected time period.
+              </Text>
+            </View>
+          }
         />
       )}
     </SafeAreaView>
@@ -294,6 +314,29 @@ const styles = StyleSheet.create({
     color: Colors.charcoal,
     textAlign: "center",
     opacity: 0.7,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIcon: {
+    marginBottom: 24,
+    opacity: 0.5,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: Colors.charcoal,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.mistGray,
+    textAlign: "center",
+    lineHeight: 24,
   },
 });
 

@@ -22,7 +22,7 @@ const step1Schema = z
   });
 
 const deviceSchema = z.object({
-  deviceNumber: z.string().min(1, { message: "Device number is required" }),
+  azureDeviceId: z.string().min(1, { message: "Azure device ID is required" }),
   deviceName: z.string().min(1, { message: "Device name is required" }),
 });
 
@@ -33,37 +33,35 @@ const step2Schema = z
   .superRefine(async (data, ctx) => {
     if (!data.devices || data.devices.length === 0) return;
 
-    const deviceNumbersToCheck = data.devices
-      .map((device) => device.deviceNumber?.trim()?.toLowerCase())
+    // Keep original values but check case-insensitively
+    const deviceIdsToCheck = data.devices
+      .map((device) => device.azureDeviceId?.trim())
       .filter(Boolean);
 
     try {
-      const { data: existingDevices, error } = await supabase
-        .from("devices")
-        .select("device_number")
-        .in("device_number", deviceNumbersToCheck);
+      // Use ilike for case-insensitive search in Supabase
+      const queries = deviceIdsToCheck.map((id) =>
+        supabase
+          .from("devices")
+          .select("azure_device_id")
+          .ilike("azure_device_id", id)
+      );
 
-      if (error) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Error checking device numbers",
-          path: ["devices"],
-        });
-        return;
-      }
+      const results = await Promise.all(queries);
+      const existingDevices = results.flatMap((r) => r.data || []);
 
       if (existingDevices && existingDevices.length > 0) {
-        const existingDeviceNumbers = new Set(
-          existingDevices.map((d) => d.device_number.toLowerCase())
+        const existingDeviceIds = new Set(
+          existingDevices.map((d) => d.azure_device_id.toLowerCase())
         );
 
         data.devices.forEach((device, index) => {
-          const deviceNumber = device.deviceNumber?.trim()?.toLowerCase();
-          if (existingDeviceNumbers.has(deviceNumber)) {
+          const deviceId = device.azureDeviceId?.trim()?.toLowerCase();
+          if (existingDeviceIds.has(deviceId)) {
             ctx.addIssue({
               code: z.ZodIssueCode.custom,
-              message: `Device number ${device.deviceNumber} is already registered`,
-              path: ["devices", index, "deviceNumber"],
+              message: `Device ID ${device.azureDeviceId} is already registered`,
+              path: ["devices", index, "azureDeviceId"],
             });
           }
         });
@@ -71,7 +69,7 @@ const step2Schema = z
     } catch (error) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Error validating device numbers",
+        message: "Error validating device IDs",
         path: ["devices"],
       });
     }
@@ -91,7 +89,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
   const flatListRef = useRef<FlatList>(null);
   const [step, setStep] = useState(1);
   const [step1Data, setStep1Data] = useState<Step1Data | null>(null);
-  const [devices, setDevices] = useState<DeviceData[]>([{ deviceNumber: "", deviceName: "" }]);
+  const [devices, setDevices] = useState<DeviceData[]>([{ azureDeviceId: "", deviceName: "" }]);
   const [deviceErrors, setDeviceErrors] = useState<{ [key: string]: string }>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -121,7 +119,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
   } = useForm<Step2Data>({
     resolver: zodResolver(step2Schema),
     defaultValues: {
-      devices: [{ deviceNumber: "", deviceName: "" }],
+      devices: [{ azureDeviceId: "", deviceName: "" }],
     },
     mode: "onSubmit",
   });
@@ -326,11 +324,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
                 </View>
                 <Controller
                   control={control2}
-                  name={`devices.${index}.deviceNumber`}
+                  name={`devices.${index}.azureDeviceId`}
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      label="Device Number"
-                      autoCapitalize="none"
+                      label="Azure Device ID"
+                      autoCapitalize="characters"
                       mode="outlined"
                       style={styles.input}
                       value={value as string}
@@ -338,13 +336,13 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
                       onBlur={onBlur}
                       outlineColor={swimTheme.colors.primary}
                       activeOutlineColor={swimTheme.colors.primary}
-                      error={!!errors2.devices?.[index]?.deviceNumber}
+                      error={!!errors2.devices?.[index]?.azureDeviceId}
                     />
                   )}
                 />
-                {(errors2.devices?.[index]?.deviceNumber || deviceErrors[index]) && (
+                {(errors2.devices?.[index]?.azureDeviceId || deviceErrors[index]) && (
                   <Text style={styles.error}>
-                    {deviceErrors[index] || errors2.devices?.[index]?.deviceNumber?.message}
+                    {deviceErrors[index] || errors2.devices?.[index]?.azureDeviceId?.message}
                   </Text>
                 )}
                 <Controller
@@ -376,7 +374,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
           <TouchableOpacity
             style={styles.addDeviceButton}
             onPress={() => {
-              setDevices([...devices, { deviceNumber: "", deviceName: "" }]);
+              setDevices([...devices, { azureDeviceId: "", deviceName: "" }]);
               // Small delay to ensure the new device is rendered before scrolling
               setTimeout(() => {
                 if (flatListRef.current) {

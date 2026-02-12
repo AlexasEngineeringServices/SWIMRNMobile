@@ -29,7 +29,7 @@ export default function DevicesScreen() {
   const [addModalVisible, setAddModalVisible] = useState(false);
 
   const deviceSchema = z.object({
-    deviceNumber: z.string().min(1, { message: "Device number is required" }),
+    azureDeviceId: z.string().min(1, { message: "Azure device ID is required" }),
     deviceName: z.string().min(1, { message: "Device name is required" }),
   });
 
@@ -40,37 +40,35 @@ export default function DevicesScreen() {
     .superRefine(async (data, ctx) => {
       if (!data.devices || data.devices.length === 0) return;
 
-      const deviceNumbersToCheck = data.devices
-        .map((device) => device.deviceNumber?.trim()?.toLowerCase())
+      // Keep original values but check case-insensitively
+      const deviceIdsToCheck = data.devices
+        .map((device) => device.azureDeviceId?.trim())
         .filter(Boolean);
 
       try {
-        const { data: existingDevices, error } = await supabase
-          .from("devices")
-          .select("device_number")
-          .in("device_number", deviceNumbersToCheck);
+        // Use ilike for case-insensitive search
+        const queries = deviceIdsToCheck.map((id) =>
+          supabase
+            .from("devices")
+            .select("azure_device_id")
+            .ilike("azure_device_id", id)
+        );
 
-        if (error) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Error checking device numbers",
-            path: ["devices"],
-          });
-          return;
-        }
+        const results = await Promise.all(queries);
+        const existingDevices = results.flatMap((r) => r.data || []);
 
         if (existingDevices && existingDevices.length > 0) {
-          const existingDeviceNumbers = new Set(
-            existingDevices.map((d) => d.device_number.toLowerCase())
+          const existingDeviceIds = new Set(
+            existingDevices.map((d) => d.azure_device_id.toLowerCase())
           );
 
           data.devices.forEach((device, index) => {
-            const deviceNumber = device.deviceNumber?.trim()?.toLowerCase();
-            if (existingDeviceNumbers.has(deviceNumber)) {
+            const deviceId = device.azureDeviceId?.trim()?.toLowerCase();
+            if (existingDeviceIds.has(deviceId)) {
               ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: `Device number ${device.deviceNumber} is already registered`,
-                path: ["devices", index, "deviceNumber"],
+                message: `Device ID ${device.azureDeviceId} is already registered`,
+                path: ["devices", index, "azureDeviceId"],
               });
             }
           });
@@ -78,7 +76,7 @@ export default function DevicesScreen() {
       } catch (_error) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Error validating device numbers",
+          message: "Error validating device IDs",
           path: ["devices"],
         });
       }
@@ -110,7 +108,7 @@ export default function DevicesScreen() {
     setError,
   } = useForm({
     resolver: zodResolver(devicesArraySchema),
-    defaultValues: { devices: [{ deviceName: "", deviceNumber: "" }] },
+    defaultValues: { devices: [{ deviceName: "", azureDeviceId: "" }] },
     mode: "onSubmit",
   });
   const { fields, append, remove } = useFieldArray({
@@ -119,44 +117,47 @@ export default function DevicesScreen() {
   });
 
   const handleAddDevice = async (data: {
-    devices: { deviceName: string; deviceNumber: string }[];
+    devices: { deviceName: string; azureDeviceId: string }[];
   }) => {
     setLoading(true);
     try {
       if (!user) throw new Error("User not found");
 
-      // Normalize device numbers
+      // Keep original case, only trim
       const normalizedDevices = data.devices.map((device) => ({
         ...device,
-        deviceNumber: device.deviceNumber.trim().toLowerCase(),
+        azureDeviceId: device.azureDeviceId.trim(),
       }));
 
-      // Check for duplicates again before submitting
-      const deviceNumbers = normalizedDevices.map((d) => d.deviceNumber);
-      const { data: existingDevices } = await supabase
-        .from("devices")
-        .select("device_number")
-        .in("device_number", deviceNumbers);
+      // Check for duplicates case-insensitively before submitting
+      const queries = normalizedDevices.map((device) =>
+        supabase
+          .from("devices")
+          .select("azure_device_id")
+          .ilike("azure_device_id", device.azureDeviceId)
+      );
 
-      if (existingDevices && existingDevices.length > 0) {
-        const existingNumbers = existingDevices.map((d) => d.device_number.toLowerCase());
-        const duplicateIndex = normalizedDevices.findIndex((d) =>
-          existingNumbers.includes(d.deviceNumber)
-        );
-
-        if (duplicateIndex !== -1) {
-          setError(`devices.${duplicateIndex}.deviceNumber`, {
-            type: "manual",
-            message: `Device number ${normalizedDevices[duplicateIndex].deviceNumber} is already registered`,
-          });
-          setLoading(false);
-          return;
+      const results = await Promise.all(queries);
+      const existingDevices = results.flatMap((r, index) => {
+        if (r.data && r.data.length > 0) {
+          return [{ index, data: r.data[0] }];
         }
+        return [];
+      });
+
+      if (existingDevices.length > 0) {
+        const duplicateIndex = existingDevices[0].index;
+        setError(`devices.${duplicateIndex}.azureDeviceId`, {
+          type: "manual",
+          message: `Device ID ${normalizedDevices[duplicateIndex].azureDeviceId} is already registered`,
+        });
+        setLoading(false);
+        return;
       }
 
       // Add devices if validation passes
       for (const device of normalizedDevices) {
-        await addDevice(user.id, device.deviceName, device.deviceNumber);
+        await addDevice(user.id, device.deviceName, device.azureDeviceId);
       }
 
       addReset();
@@ -170,20 +171,20 @@ export default function DevicesScreen() {
   // Edit device
   const handleEditDevice = async (id: string) => {
     setFormErrors({});
-    // Always use lowercase for device number
-    const normalizedNumber = editNumber.trim().toLowerCase();
+    // Keep original case, only trim
+    const normalizedId = editNumber.trim();
     const validation = deviceSchema.safeParse({
-      deviceNumber: normalizedNumber,
+      azureDeviceId: normalizedId,
       deviceName: editName,
     });
     if (!validation.success) {
       setFormErrors({ edit: validation.error.issues[0].message });
       return;
     }
-    if (!editName || !normalizedNumber) return;
+    if (!editName || !normalizedId) return;
     setLoading(true);
     try {
-      await editDevice(id, editName, normalizedNumber);
+      await editDevice(id, editName, normalizedId);
     } catch (error: any) {
       Alert.alert("Error", error.message);
     }
@@ -223,11 +224,11 @@ export default function DevicesScreen() {
           style={styles.input}
         />
         <TextInput
-          label="Device Number"
+          label="Azure Device ID"
           value={editNumber}
-          onChangeText={(text) => setEditNumber(text.toLowerCase())}
+          onChangeText={setEditNumber}
           style={styles.input}
-          autoCapitalize="none"
+          autoCapitalize="characters"
         />
         {formErrors.edit && (
           <Text style={{ color: swimTheme.colors.notification }}>{formErrors.edit}</Text>
@@ -246,12 +247,12 @@ export default function DevicesScreen() {
       </View>
     ) : (
       <DeviceActionCard
-        deviceNumber={item.device_number}
+        deviceNumber={item.azure_device_id}
         deviceName={item.device_name}
         onEdit={() => {
           setEditingId(item.id);
           setEditName(item.device_name);
-          setEditNumber(item.device_number);
+          setEditNumber(item.azure_device_id);
         }}
         onDelete={() => handleDeleteDevice(item.id)}
         onSwipeLeft={() => {}}
@@ -402,25 +403,25 @@ export default function DevicesScreen() {
                     )}
                     <Controller
                       control={addControl}
-                      name={`devices.${index}.deviceNumber`}
+                      name={`devices.${index}.azureDeviceId`}
                       render={({ field: { onChange, onBlur, value } }) => (
                         <TextInput
-                          label="Device Number"
+                          label="Azure Device ID"
                           mode="outlined"
                           value={value}
-                          onChangeText={(text) => onChange(text.toLowerCase())}
+                          onChangeText={onChange}
                           onBlur={onBlur}
                           style={styles.input}
-                          autoCapitalize="none"
+                          autoCapitalize="characters"
                           outlineColor={swimTheme.colors.primary}
                           activeOutlineColor={swimTheme.colors.primary}
-                          error={!!addErrors.devices?.[index]?.deviceNumber}
+                          error={!!addErrors.devices?.[index]?.azureDeviceId}
                         />
                       )}
                     />
-                    {addErrors.devices?.[index]?.deviceNumber && (
+                    {addErrors.devices?.[index]?.azureDeviceId && (
                       <Text style={styles.error}>
-                        {addErrors.devices[index].deviceNumber?.message}
+                        {addErrors.devices[index].azureDeviceId?.message}
                       </Text>
                     )}
                   </View>
@@ -430,7 +431,7 @@ export default function DevicesScreen() {
                     <Button
                       mode="outlined"
                       onPress={() => {
-                        append({ deviceName: "", deviceNumber: "" });
+                        append({ deviceName: "", azureDeviceId: "" });
                         // Small delay to ensure the new device is rendered before scrolling
                         setTimeout(() => {
                           if (flatListRef.current) {

@@ -1,6 +1,14 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { Alert, Linking, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Button, Dialog, Portal, Text } from "react-native-paper";
 import { useAllDeviceCards } from "../../hooks/useAllDeviceCards";
 import { swimTheme } from "../../hooks/useCustomTheme";
@@ -10,7 +18,7 @@ import DeviceCardContainer from "./DeviceCardContainer";
 
 export default function HomeScreen() {
   const { user, loading: authLoading } = useAuthStore();
-  const deviceId = user?.device_number || "";
+  const deviceId = user?.azure_device_id || "";
 
   const [allDeviceData, setAllDeviceData] = React.useState<AzureData[]>([]);
 
@@ -30,7 +38,6 @@ export default function HomeScreen() {
 
   console.log("Device Cards:", deviceCards);
 
-  
   const [showInstructions, setShowInstructions] = React.useState(true);
 
   const loading = authLoading;
@@ -95,9 +102,27 @@ export default function HomeScreen() {
 
         {/* Device Information Card */}
         <View style={styles.devicesContainerCard}>
-          {deviceCards.map(({ deviceId, readings }) => (
-            <DeviceCardContainer key={deviceId} deviceId={deviceId} readings={readings} />
-          ))}
+          {deviceCards.length === 0 || deviceCards.every((card) => card.readings.length === 0) ? (
+            <View style={styles.emptyStateContainer}>
+              <MaterialCommunityIcons
+                name="water-off"
+                size={80}
+                color={swimTheme.colors.border}
+                style={styles.emptyStateIcon}
+              />
+              <Text style={styles.emptyStateTitle}>No Device Data Yet</Text>
+              <Text style={styles.emptyStateText}>
+                Your device readings will appear here once data is available.
+              </Text>
+              <Text style={styles.emptyStateSubtext}>
+                Make sure your devices are registered and connected.
+              </Text>
+            </View>
+          ) : (
+            deviceCards.map(({ deviceId, readings }) => (
+              <DeviceCardContainer key={deviceId} deviceId={deviceId} readings={readings} />
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -107,7 +132,11 @@ export default function HomeScreen() {
         <Dialog visible={showInstructions} onDismiss={() => setShowInstructions(false)}>
           <Dialog.Content>
             <View style={styles.instructionContent}>
-              <MaterialCommunityIcons name="gesture-swipe-right" size={40} color={swimTheme.colors.primary} />
+              <MaterialCommunityIcons
+                name="gesture-swipe-right"
+                size={40}
+                color={swimTheme.colors.primary}
+              />
               <Text style={styles.instructionTitle}>Quick Tip</Text>
               <Text style={styles.instructionText}>
                 Swipe any device card right to view its detailed usage history
@@ -433,5 +462,36 @@ const styles = StyleSheet.create({
     color: "#FFF",
     ...swimTheme.fonts.medium,
     fontSize: 16,
+  },
+  emptyStateContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyStateIcon: {
+    marginBottom: 24,
+    opacity: 0.5,
+  },
+  emptyStateTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: swimTheme.colors.text,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: swimTheme.colors.border,
+    textAlign: "center",
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: swimTheme.colors.border,
+    textAlign: "center",
+    fontStyle: "italic",
+    opacity: 0.8,
   },
 });

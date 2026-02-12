@@ -7,7 +7,7 @@ export async function signInWithEmail({ email, password }: { email: string; pass
 }
 
 interface DeviceInput {
-  device_number: string;
+  azure_device_id: string;
   device_name: string;
 }
 
@@ -43,12 +43,12 @@ export const signUpWithEmail = async (data: SignUpData) => {
         };
       }
 
-      if (typeof device.device_number !== "string" || device.device_number.trim() === "") {
+      if (typeof device.azure_device_id !== "string" || device.azure_device_id.trim() === "") {
         return {
           data: null,
           error: {
             message: "Invalid device data",
-            details: `Device number is required and cannot be empty for device ${index + 1}`,
+            details: `Azure device ID is required and cannot be empty for device ${index + 1}`,
           },
         };
       }
@@ -64,21 +64,21 @@ export const signUpWithEmail = async (data: SignUpData) => {
       }
     }
 
-    // Check for duplicate device numbers and names before proceeding
-    const deviceNumbers = data.devices.map((device) => device.device_number);
+    // Check for duplicate device IDs and names before proceeding
+    const deviceIds = data.devices.map((device) => device.azure_device_id);
     const deviceNames = data.devices.map((device) => device.device_name);
 
-    // First check for duplicates within the submitted devices
-    const uniqueDeviceNumbers = new Set(deviceNumbers);
+    // First check for duplicates within the submitted devices (case-insensitive)
+    const uniqueDeviceIds = new Set(deviceIds.map(id => id.toLowerCase()));
     const uniqueDeviceNames = new Set(deviceNames);
 
-    // Check for duplicate device numbers
-    if (uniqueDeviceNumbers.size !== deviceNumbers.length) {
+    // Check for duplicate device IDs
+    if (uniqueDeviceIds.size !== deviceIds.length) {
       return {
         data: null,
         error: {
-          message: "Duplicate device numbers found in your submission",
-          details: "Each device must have a unique device number",
+          message: "Duplicate device IDs found in your submission",
+          details: "Each device must have a unique Azure device ID",
         },
       };
     }
@@ -94,29 +94,24 @@ export const signUpWithEmail = async (data: SignUpData) => {
       };
     }
 
-    // Then check if any device numbers already exist in the database
-    const { data: existingDevices, error: deviceCheckError } = await supabase
-      .from("devices")
-      .select("device_number")
-      .in("device_number", deviceNumbers);
+    // Then check if any device IDs already exist in the database (case-insensitive)
+    const queries = deviceIds.map((id) =>
+      supabase
+        .from("devices")
+        .select("azure_device_id")
+        .ilike("azure_device_id", id)
+    );
 
-    if (deviceCheckError) {
-      return {
-        data: null,
-        error: {
-          message: "Error checking device numbers",
-          details: deviceCheckError,
-        },
-      };
-    }
+    const results = await Promise.all(queries);
+    const existingDevices = results.flatMap((r) => r.data || []);
 
     if (existingDevices && existingDevices.length > 0) {
-      const existingNumbers = existingDevices.map((d) => d.device_number).join(", ");
+      const existingIds = existingDevices.map((d) => d.azure_device_id).join(", ");
       return {
         data: null,
         error: {
-          message: "Device numbers already registered",
-          details: `The following device numbers are already registered: ${existingNumbers}`,
+          message: "Device IDs already registered",
+          details: `The following device IDs are already registered: ${existingIds}`,
         },
       };
     }
@@ -161,7 +156,7 @@ export const signUpWithEmail = async (data: SignUpData) => {
     try {
       const devicesToInsert = data.devices.map((device) => ({
         user_id: user.id,
-        device_number: device.device_number,
+        azure_device_id: device.azure_device_id,
         device_name: device.device_name,
       }));
 

@@ -24,7 +24,7 @@ interface RegisterData {
   password: string;
   confirmPassword: string;
   devices: {
-    deviceNumber: string;
+    azureDeviceId: string;
     deviceName: string;
   }[];
 }
@@ -47,10 +47,25 @@ const Auth = () => {
       <SafeAreaView style={{ flex: 1, backgroundColor: swimTheme.colors.background }}>
         <View style={styles.container}>
           <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
-            <Text style={{ fontSize: 24, fontWeight: "bold", color: swimTheme.colors.text, marginBottom: 16, textAlign: "center" }}>
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "bold",
+                color: swimTheme.colors.text,
+                marginBottom: 16,
+                textAlign: "center",
+              }}
+            >
               Web Access Not Available
             </Text>
-            <Text style={{ fontSize: 16, color: swimTheme.colors.border, textAlign: "center", marginBottom: 24 }}>
+            <Text
+              style={{
+                fontSize: 16,
+                color: swimTheme.colors.border,
+                textAlign: "center",
+                marginBottom: 24,
+              }}
+            >
               Authentication is only available through the mobile app.
             </Text>
             <Text style={{ fontSize: 14, color: swimTheme.colors.border, textAlign: "center" }}>
@@ -96,7 +111,7 @@ const Auth = () => {
       email: data.email,
       password: data.password,
       devices: data.devices.map((device) => ({
-        device_number: device.deviceNumber,
+        azure_device_id: device.azureDeviceId,
         device_name: device.deviceName,
       })),
     };

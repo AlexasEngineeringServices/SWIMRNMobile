@@ -29,18 +29,20 @@ export default function SharedDashboard() {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Decrypt user ID from URL token parameter (now async)
         const encryptedToken = params.token || "";
         const userId = await decryptUserId(encryptedToken);
-        
+
         if (!userId) {
           // Show a specific message if the JWT is expired
-          setError("This link has expired. For your security, shared links are only valid for 7 days. Please request a new link from the owner.");
+          setError(
+            "This link has expired. For your security, shared links are only valid for 7 days. Please request a new link from the owner."
+          );
           setLoading(false);
           return;
         }
-        
+
         // Fetch device data filtered by user ID
         const allData = await fetchAzureData(undefined, userId);
         setAllDeviceData(allData);
@@ -51,7 +53,7 @@ export default function SharedDashboard() {
         setLoading(false);
       }
     }
-    
+
     if (Platform.OS === "web") {
       fetchData();
     }
@@ -109,9 +111,21 @@ export default function SharedDashboard() {
 
         {/* Device Information Card */}
         <View style={styles.devicesContainerCard}>
-          {deviceCards.length === 0 ? (
+          {deviceCards.length === 0 || deviceCards.every((card) => card.readings.length === 0) ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No device data available</Text>
+              <MaterialCommunityIcons
+                name="water-off"
+                size={80}
+                color={swimTheme.colors.border}
+                style={styles.emptyIcon}
+              />
+              <Text style={styles.emptyTitle}>No Device Data Yet</Text>
+              <Text style={styles.emptyText}>
+                Device readings will appear here once data is available.
+              </Text>
+              <Text style={styles.emptySubtext}>
+                Make sure devices are registered and connected.
+              </Text>
             </View>
           ) : (
             deviceCards.map(({ deviceId, readings }) => (
@@ -126,8 +140,8 @@ export default function SharedDashboard() {
       </View>
 
       <Portal>
-        <Dialog 
-          visible={showInstructions} 
+        <Dialog
+          visible={showInstructions}
           onDismiss={() => setShowInstructions(false)}
           style={styles.dialog}
         >
@@ -189,7 +203,7 @@ const styles = StyleSheet.create({
   },
   devicesContainerCard: {
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -215,7 +229,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     maxWidth: 400,
     alignSelf: "center",
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   dialogContent: {
     backgroundColor: "#fff",
@@ -272,11 +286,34 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   emptyContainer: {
-    padding: 40,
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIcon: {
+    marginBottom: 24,
+    opacity: 0.5,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: swimTheme.colors.text,
+    marginBottom: 12,
+    textAlign: "center",
   },
   emptyText: {
     fontSize: 16,
     color: swimTheme.colors.border,
+    textAlign: "center",
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: swimTheme.colors.border,
+    textAlign: "center",
+    fontStyle: "italic",
+    opacity: 0.8,
   },
 });

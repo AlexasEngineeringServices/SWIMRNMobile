@@ -5,7 +5,7 @@ import { swimTheme } from "../hooks/useCustomTheme";
 import DeviceActionSwipeGesture from "./DeviceActionSwipeGesture";
 
 interface DeviceActionCardProps {
-  deviceNumber: string;
+  deviceNumber: string; // This is the Azure Device ID
   deviceName: string;
   onEdit: () => void;
   onDelete: () => void;
@@ -50,7 +50,7 @@ export const DeviceActionCard: React.FC<DeviceActionCardProps> = ({
         <Animated.View style={[styles.card, { transform: [{ translateX }] }]}>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.deviceNumber}>Device Number: {deviceNumber}</Text>
+              <Text style={styles.deviceNumber}>Device ID: {deviceNumber}</Text>
               <Text style={styles.deviceName}>Device Name: {deviceName}</Text>
             </View>
           </View>

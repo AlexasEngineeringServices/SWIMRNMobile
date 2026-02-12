@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
 import moment from "moment";
@@ -179,6 +180,20 @@ function UsageHistoryScreen() {
             showsVerticalScrollIndicator={true}
             refreshing={loading}
             onRefresh={fetchUsageHistory}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons
+                  name="water-off"
+                  size={80}
+                  color={Colors.mistGray}
+                  style={styles.emptyIcon}
+                />
+                <Text style={styles.emptyTitle}>No Usage Data</Text>
+                <Text style={styles.emptyText}>
+                  No usage history found for the selected time period.
+                </Text>
+              </View>
+            }
           />
         )}
       </SafeAreaView>
@@ -220,6 +235,29 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 16,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyIcon: {
+    marginBottom: 24,
+    opacity: 0.5,
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: Colors.charcoal,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.mistGray,
+    textAlign: "center",
+    lineHeight: 24,
   },
 });
 
