@@ -48,10 +48,7 @@ export default function DevicesScreen() {
       try {
         // Use ilike for case-insensitive search
         const queries = deviceIdsToCheck.map((id) =>
-          supabase
-            .from("devices")
-            .select("azure_device_id")
-            .ilike("azure_device_id", id)
+          supabase.from("devices").select("azure_device_id").ilike("azure_device_id", id)
         );
 
         const results = await Promise.all(queries);

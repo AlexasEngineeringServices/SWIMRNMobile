@@ -69,7 +69,7 @@ export const signUpWithEmail = async (data: SignUpData) => {
     const deviceNames = data.devices.map((device) => device.device_name);
 
     // First check for duplicates within the submitted devices (case-insensitive)
-    const uniqueDeviceIds = new Set(deviceIds.map(id => id.toLowerCase()));
+    const uniqueDeviceIds = new Set(deviceIds.map((id) => id.toLowerCase()));
     const uniqueDeviceNames = new Set(deviceNames);
 
     // Check for duplicate device IDs
@@ -96,10 +96,7 @@ export const signUpWithEmail = async (data: SignUpData) => {
 
     // Then check if any device IDs already exist in the database (case-insensitive)
     const queries = deviceIds.map((id) =>
-      supabase
-        .from("devices")
-        .select("azure_device_id")
-        .ilike("azure_device_id", id)
+      supabase.from("devices").select("azure_device_id").ilike("azure_device_id", id)
     );
 
     const results = await Promise.all(queries);
