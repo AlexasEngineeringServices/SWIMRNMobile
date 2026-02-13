@@ -45,8 +45,7 @@ export function useDeviceReadings(deviceReadings: AzureData[]): DeviceReadingsSt
   // Get last readings from the last date and find the latest one based on enqueuedAt
   const lastReadings = readingsSorted
     .filter(
-      (entry: AzureData) =>
-        moment.utc(entry.enqueuedAt).format("YYYY-MM-DD") === lastReadingDate
+      (entry: AzureData) => moment.utc(entry.enqueuedAt).format("YYYY-MM-DD") === lastReadingDate
     )
     .sort((a, b) => moment.utc(b.enqueuedAt).valueOf() - moment.utc(a.enqueuedAt).valueOf());
 
