@@ -19,15 +19,20 @@ export function useDeviceReadings(deviceReadings: AzureData[]): DeviceReadingsSt
   // Safety check: ensure deviceReadings is an array
   const safeReadings = Array.isArray(deviceReadings) ? deviceReadings : [];
 
+  // Sort readings newest -> oldest, ignoring any missing timestamps
+  const readingsSorted = safeReadings
+    .filter((entry) => !!entry?.enqueuedAt)
+    .sort((a, b) => moment.utc(b.enqueuedAt).valueOf() - moment.utc(a.enqueuedAt).valueOf());
+
   // Get all unique dates from readings, sorted in descending order
   const uniqueDates = [
-    ...new Set(safeReadings.map((entry) => moment.utc(entry.enqueuedAt).format("YYYY-MM-DD"))),
+    ...new Set(readingsSorted.map((entry) => moment.utc(entry.enqueuedAt).format("YYYY-MM-DD"))),
   ]
     .sort()
     .reverse();
 
   // Get today's readings
-  const currentReadings = safeReadings.filter((entry: AzureData) =>
+  const currentReadings = readingsSorted.filter((entry: AzureData) =>
     moment.utc(entry.enqueuedAt).isSame(today, "day")
   );
 
@@ -38,15 +43,15 @@ export function useDeviceReadings(deviceReadings: AzureData[]): DeviceReadingsSt
   const lastReadingDate = uniqueDates.find((date) => !moment.utc(date).isSame(today, "day"));
 
   // Get last readings from the last date and find the latest one based on enqueuedAt
-  const lastReadings = safeReadings
+  const lastReadings = readingsSorted
     .filter(
       (entry: AzureData) =>
         moment.utc(entry.enqueuedAt).format("YYYY-MM-DD") === lastReadingDate
     )
     .sort((a, b) => moment.utc(b.enqueuedAt).valueOf() - moment.utc(a.enqueuedAt).valueOf());
 
-  // Get only the latest reading
-  const latestReading = lastReadings[0];
+  // Latest reading overall (including today). This is what the dashboard cards display.
+  const latestReading = readingsSorted[0];
 
   // Use only today's sum for the increment display
   const dailyIncrement = currentSum;

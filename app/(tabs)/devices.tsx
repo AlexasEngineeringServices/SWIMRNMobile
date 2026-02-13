@@ -409,7 +409,7 @@ export default function DevicesScreen() {
                           onChangeText={onChange}
                           onBlur={onBlur}
                           style={styles.input}
-                          autoCapitalize="characters"
+                          autoCapitalize="none"
                           outlineColor={swimTheme.colors.primary}
                           activeOutlineColor={swimTheme.colors.primary}
                           error={!!addErrors.devices?.[index]?.azureDeviceId}

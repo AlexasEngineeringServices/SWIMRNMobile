@@ -325,7 +325,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, error, loading })
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       label="Azure Device ID"
-                      autoCapitalize="characters"
+                      autoCapitalize="none"
                       mode="outlined"
                       style={styles.input}
                       value={value as string}

@@ -18,7 +18,8 @@ export async function fetchAzureData(
   userId?: string
 ): Promise<AzureData[]> {
   let query = supabase
-    .from("azure_data")
+    // .from("azure_data_test") // for azure_data_test
+    .from("azure_data") // for azure_data real data
     .select(
       "id, device_id, azure_device_id, round_count, slim_count, round_void_count, slim_void_count, enqueued_at, raw_payload, created_at, devices!inner(user_id)"
     )
