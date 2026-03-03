@@ -123,21 +123,33 @@ function UsageHistoryScreen() {
             <DatePickerInput
               label="From (MM/DD/YYYY)"
               value={fromDate ?? undefined}
-              onChange={date => setFromDate(date ?? null)}
+              onChange={(date) => setFromDate(date ?? null)}
               inputMode="start"
               style={styles.datePicker}
               locale="en"
-              theme={{ colors: { background: '#fff', onSurface: Colors.charcoal, primary: Colors.deepSkyBlue } }}
+              theme={{
+                colors: {
+                  background: "#fff",
+                  onSurface: Colors.charcoal,
+                  primary: Colors.deepSkyBlue,
+                },
+              }}
               textColor={Colors.charcoal}
             />
             <DatePickerInput
               label="To (MM/DD/YYYY)"
               value={toDate ?? undefined}
-              onChange={date => setToDate(date ?? null)}
+              onChange={(date) => setToDate(date ?? null)}
               inputMode="end"
               style={styles.datePicker}
               locale="en"
-              theme={{ colors: { background: '#fff', onSurface: Colors.charcoal, primary: Colors.deepSkyBlue } }}
+              theme={{
+                colors: {
+                  background: "#fff",
+                  onSurface: Colors.charcoal,
+                  primary: Colors.deepSkyBlue,
+                },
+              }}
               textColor={Colors.charcoal}
             />
           </View>
@@ -294,7 +306,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -308,10 +320,10 @@ const styles = StyleSheet.create({
   filterSection: {
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: "#f0f4f8",
     borderRadius: 12,
     padding: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 2,
@@ -319,7 +331,7 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.charcoal,
     marginBottom: 8,
   },
@@ -327,12 +339,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   datePickerSection: {
-    flexDirection: 'column',
+    flexDirection: "column",
     gap: 8,
   },
   datePicker: {
     marginBottom: 8,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
   },
 });
