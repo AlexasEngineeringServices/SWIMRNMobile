@@ -14,7 +14,7 @@ import { useAllDeviceCards } from "../../hooks/useAllDeviceCards";
 import { swimTheme } from "../../hooks/useCustomTheme";
 import { AzureData, fetchAzureData } from "../../services/azureDataService";
 import { useAuthStore } from "../../store/authStore";
-import DeviceCardContainer from "./DeviceCardContainer";
+import DeviceCardContainer from "../../components/DeviceCardContainer";
 
 export default function HomeScreen() {
   const { user, loading: authLoading } = useAuthStore();

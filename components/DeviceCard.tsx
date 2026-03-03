@@ -34,13 +34,17 @@ export const DashboardDeviceCard: React.FC<DashboardDeviceCardProps> = ({
   }, [hintOpacity]);
 
   const handleSwipe = (direction: string) => {
-    if (direction === "left" || direction === "right") {
+    if (direction === "right") {
       onSwipe();
     }
   };
 
   return (
-    <DeviceCardSwipeGesture onSwipePerformed={handleSwipe} gestureStyle={styles.gestureContainer}>
+    <DeviceCardSwipeGesture
+      onSwipePerformed={handleSwipe}
+      gestureStyle={styles.gestureContainer}
+      allowDirection={["right"]}
+    >
       <View style={styles.deviceCard}>
         <View style={styles.deviceHeader}>
           <Text style={styles.deviceTitle}>

@@ -40,7 +40,11 @@ export const DashboardDeviceCard: React.FC<DashboardDeviceCardProps> = ({
   };
 
   return (
-    <SwipeGesture onSwipePerformed={handleSwipe} gestureStyle={styles.gestureContainer} allowDirection={["right"]}>
+    <SwipeGesture
+      onSwipePerformed={handleSwipe}
+      gestureStyle={styles.gestureContainer}
+      allowDirection={["right"]}
+    >
       <View style={styles.deviceCard}>
         <View style={styles.deviceHeader}>
           <Text style={styles.deviceTitle}>

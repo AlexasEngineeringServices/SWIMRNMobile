@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import React from "react";
-import { DashboardDeviceCard } from "../../components/DashboardDeviceCard";
-import { useDeviceReadings } from "../../hooks/useDeviceReadings";
-import { AzureData } from "../../services/azureDataService";
+import { useDeviceReadings } from "../hooks/useDeviceReadings";
+import { AzureData } from "../services/azureDataService";
+import { DashboardDeviceCard } from "./DashboardDeviceCard";
 
 interface DeviceCardContainerProps {
   deviceId: string;
@@ -17,7 +17,7 @@ const DeviceCardContainer: React.FC<DeviceCardContainerProps> = ({ deviceId, rea
 
   const handleSwipe = () => {
     router.push({
-      pathname: "../usage-history",
+      pathname: "/usage-history",
       params: { deviceId },
     });
   };

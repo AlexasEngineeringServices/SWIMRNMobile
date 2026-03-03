@@ -5,13 +5,14 @@ import moment from "moment";
 import React, { useCallback, useEffect, useState } from "react";
 import { FlatList, ListRenderItem, StyleSheet, View } from "react-native";
 import { Card, IconButton, List, SegmentedButtons, Text } from "react-native-paper";
+import { DatePickerInput } from "react-native-paper-dates";
 import { SafeAreaView } from "react-native-safe-area-context";
 import RouteGuard from "../components/RouteGuard";
 import { Colors } from "../constants/theme";
 import { AzureData, fetchAzureData } from "../services/azureDataService";
 import { useAuthStore } from "../store/authStore";
 
-type TimeFilter = "daily" | "weekly" | "monthly";
+type FilterMode = "all" | "dateRange";
 
 function UsageHistoryScreen() {
   const { deviceId } = useLocalSearchParams<{ deviceId?: string }>();
@@ -19,7 +20,9 @@ function UsageHistoryScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [usageData, setUsageData] = useState<AzureData[]>([]);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("daily");
+  const [filterMode, setFilterMode] = useState<FilterMode>("all");
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
 
   // Fetch usage history
   const fetchUsageHistory = useCallback(async () => {
@@ -36,17 +39,22 @@ function UsageHistoryScreen() {
   }, [deviceId, user?.id]);
 
   const filterData = (data: AzureData[]) => {
-    const now = moment.utc();
-    switch (timeFilter) {
-      case "daily":
-        return data.filter((usage) => moment.utc(usage.enqueuedAt).isSame(now, "day"));
-      case "weekly":
-        return data.filter((usage) => moment.utc(usage.enqueuedAt).isSame(now, "week"));
-      case "monthly":
-        return data.filter((usage) => moment.utc(usage.enqueuedAt).isSame(now, "month"));
-      default:
-        return data;
+    if (filterMode === "all") {
+      return data;
     }
+    if (filterMode === "dateRange") {
+      // Keep list visible until both dates are chosen
+      if (!fromDate || !toDate) return data;
+
+      const [startDate, endDate] = fromDate <= toDate ? [fromDate, toDate] : [toDate, fromDate];
+      const from = moment.utc(startDate).startOf("day");
+      const to = moment.utc(endDate).endOf("day");
+      return data.filter((usage) => {
+        const usageDate = moment.utc(usage.enqueuedAt);
+        return usageDate.isBetween(from, to, undefined, "[]"); // inclusive
+      });
+    }
+    return [];
   };
 
   useEffect(() => {
@@ -77,8 +85,8 @@ function UsageHistoryScreen() {
   );
 
   const Header = (
-    <View style={{ backgroundColor: Colors.offWhite, marginBottom: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", paddingTop: 8 }}>
+    <View style={styles.headerContainer}>
+      <View style={styles.headerRow}>
         <IconButton
           icon="arrow-left"
           size={28}
@@ -91,26 +99,50 @@ function UsageHistoryScreen() {
           {deviceId ? ` (Device ${deviceId.replace("device-", "").padStart(3, "0")})` : ""}
         </Text>
       </View>
-      <SegmentedButtons
-        value={timeFilter}
-        onValueChange={(value) => setTimeFilter(value as TimeFilter)}
-        buttons={[
-          { value: "daily", label: "Daily" },
-          { value: "weekly", label: "Weekly" },
-          { value: "monthly", label: "Monthly" },
-        ]}
-        theme={{
-          colors: {
-            secondaryContainer: Colors.mistGray,
-            onSecondaryContainer: Colors.charcoal,
-            primary: Colors.offWhite,
-            onPrimary: Colors.deepSkyBlue,
-            outline: Colors.mistGray,
-          },
-        }}
-        density="medium"
-        style={styles.segmentedButtons}
-      />
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Filter:</Text>
+        <SegmentedButtons
+          value={filterMode}
+          onValueChange={(value) => setFilterMode(value as FilterMode)}
+          buttons={[
+            { value: "all", label: "All" },
+            { value: "dateRange", label: "Date" },
+          ]}
+          density="medium"
+          style={styles.filterSegmented}
+          theme={{
+            colors: {
+              secondaryContainer: Colors.mistGray,
+              onSecondaryContainer: Colors.charcoal,
+              outline: Colors.mistGray,
+            },
+          }}
+        />
+        {filterMode === "dateRange" && (
+          <View style={styles.datePickerSection}>
+            <DatePickerInput
+              label="From (MM/DD/YYYY)"
+              value={fromDate ?? undefined}
+              onChange={date => setFromDate(date ?? null)}
+              inputMode="start"
+              style={styles.datePicker}
+              locale="en"
+              theme={{ colors: { background: '#fff', onSurface: Colors.charcoal, primary: Colors.deepSkyBlue } }}
+              textColor={Colors.charcoal}
+            />
+            <DatePickerInput
+              label="To (MM/DD/YYYY)"
+              value={toDate ?? undefined}
+              onChange={date => setToDate(date ?? null)}
+              inputMode="end"
+              style={styles.datePicker}
+              locale="en"
+              theme={{ colors: { background: '#fff', onSurface: Colors.charcoal, primary: Colors.deepSkyBlue } }}
+              textColor={Colors.charcoal}
+            />
+          </View>
+        )}
+      </View>
     </View>
   );
 
@@ -211,13 +243,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
     paddingHorizontal: 16,
+    color: Colors.charcoal,
     // paddingTop removed, handled by SafeAreaView and IconButton row
   },
-  segmentedButtons: {
-    marginBottom: 16,
-    marginHorizontal: 16,
-    elevation: 2,
-  },
+  // segmentedButtons removed
   card: {
     marginHorizontal: 16,
     marginBottom: 8,
@@ -258,6 +287,53 @@ const styles = StyleSheet.create({
     color: Colors.mistGray,
     textAlign: "center",
     lineHeight: 24,
+  },
+  headerContainer: {
+    backgroundColor: Colors.offWhite,
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 8,
+  },
+  filterSection: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: '#f0f4f8',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  filterLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: Colors.charcoal,
+    marginBottom: 8,
+  },
+  filterSegmented: {
+    marginBottom: 10,
+  },
+  datePickerSection: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  datePicker: {
+    marginBottom: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
   },
 });
 
